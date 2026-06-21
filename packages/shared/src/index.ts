@@ -8,3 +8,4 @@
 export * from "./enums";
 export * from "./script-analysis";
 export * from "./prompt-package";
+export * from "./extension";

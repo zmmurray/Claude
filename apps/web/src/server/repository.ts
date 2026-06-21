@@ -506,6 +506,62 @@ export async function listPromptPackagesForScene(sceneId: string): Promise<Promp
   return data ?? [];
 }
 
+// --- Generation tasks (Phase Two) --------------------------------------------
+
+export async function createGenerationTask(args: {
+  projectId: string;
+  userId: string;
+  sceneId: string | null;
+  promptPackageId: string;
+  stage: string;
+  targetPlatform: string;
+}): Promise<string> {
+  const supabase = await createSupabaseServerClient();
+  // Only one active task at a time per user (the extension shows the active one).
+  await supabase
+    .from("generation_tasks")
+    .update({ is_active: false })
+    .eq("user_id", args.userId)
+    .eq("is_active", true);
+
+  const { data, error } = await supabase
+    .from("generation_tasks")
+    .insert({
+      project_id: args.projectId,
+      user_id: args.userId,
+      scene_id: args.sceneId,
+      prompt_package_id: args.promptPackageId,
+      stage: args.stage,
+      target_platform: args.targetPlatform,
+      status: "prepared",
+      is_active: true,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return data.id;
+}
+
+export interface GenerationTaskRow {
+  id: string;
+  status: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export async function getTaskForPackage(packageId: string): Promise<GenerationTaskRow | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("generation_tasks")
+    .select("id, status, is_active, created_at")
+    .eq("prompt_package_id", packageId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ?? null;
+}
+
 function mapProject(row: Record<string, unknown>): ProjectRow {
   return {
     id: row.id as string,

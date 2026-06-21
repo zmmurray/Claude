@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { Badge, Card, LinkButton, Notice, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, Input, LinkButton, Notice, PageHeader } from "@/components/ui";
 import { CopyButton } from "@/components/copy-button";
-import { getPromptPackage } from "@/server/repository";
+import { requireUser } from "@/server/auth";
+import { listResultsForTask } from "@/server/extension/service";
+import { getPromptPackage, getTaskForPackage } from "@/server/repository";
+import { decideResultAction, startTaskAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +27,10 @@ export default async function PromptPackagePage({
   const row = await getPromptPackage(packageId);
   if (!row) notFound();
   const pkg = row.payload;
+
+  const user = await requireUser();
+  const task = await getTaskForPackage(packageId);
+  const results = task ? await listResultsForTask(user.id, task.id) : [];
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -103,6 +110,91 @@ export default async function PromptPackagePage({
           </Notice>
         </div>
       ) : null}
+
+      <Card className="mt-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+            Generation (Chrome extension)
+          </h2>
+          {task ? <Badge>task: {task.status}</Badge> : null}
+        </div>
+
+        <p className="mb-4 text-sm text-muted">
+          Send this prompt package to the SceneArc extension, then use it on a generation site and
+          import the result. You run generation yourself.
+        </p>
+
+        <form action={startTaskAction}>
+          <input type="hidden" name="projectId" value={id} />
+          <input type="hidden" name="sceneId" value={sceneId} />
+          <input type="hidden" name="packageId" value={packageId} />
+          <input type="hidden" name="stage" value={pkg.productionStage} />
+          <Button type="submit" variant={task ? "secondary" : "primary"}>
+            {task ? "Re-send to extension" : "Send to extension"}
+          </Button>
+        </form>
+
+        {results.length > 0 ? (
+          <div className="mt-6">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+              Imported results
+            </h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {results.map((r) => (
+                <div key={r.id} className="rounded-md border border-charcoal-700 bg-charcoal-900 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <Badge>{r.status}</Badge>
+                    <span className="text-xs text-muted-dim">{r.kind}</span>
+                  </div>
+                  {r.url ? (
+                    r.kind === "video" ? (
+                      <video src={r.url} controls className="w-full rounded" />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={r.url} alt="Imported result" className="w-full rounded" />
+                    )
+                  ) : (
+                    <p className="text-xs text-muted-dim">No preview available.</p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <form action={decideResultAction}>
+                      <input type="hidden" name="resultId" value={r.id} />
+                      <input type="hidden" name="decision" value="approved" />
+                      <input type="hidden" name="projectId" value={id} />
+                      <input type="hidden" name="sceneId" value={sceneId} />
+                      <input type="hidden" name="packageId" value={packageId} />
+                      <Button type="submit" className="px-3 py-1 text-xs">
+                        Approve
+                      </Button>
+                    </form>
+                    <form action={decideResultAction}>
+                      <input type="hidden" name="resultId" value={r.id} />
+                      <input type="hidden" name="decision" value="rejected" />
+                      <input type="hidden" name="projectId" value={id} />
+                      <input type="hidden" name="sceneId" value={sceneId} />
+                      <input type="hidden" name="packageId" value={packageId} />
+                      <Button type="submit" variant="danger" className="px-3 py-1 text-xs">
+                        Reject
+                      </Button>
+                    </form>
+                  </div>
+                  <form action={decideResultAction} className="mt-2 flex gap-2">
+                    <input type="hidden" name="resultId" value={r.id} />
+                    <input type="hidden" name="decision" value="revision_requested" />
+                    <input type="hidden" name="projectId" value={id} />
+                    <input type="hidden" name="sceneId" value={sceneId} />
+                    <input type="hidden" name="packageId" value={packageId} />
+                    <Input name="notes" placeholder="Revision notes…" className="text-xs" />
+                    <Button type="submit" variant="secondary" className="px-3 py-1 text-xs">
+                      Revise
+                    </Button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+      </Card>
     </div>
   );
 }

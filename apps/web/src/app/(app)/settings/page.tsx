@@ -3,6 +3,8 @@ import { signOutAction } from "@/app/login/actions";
 import { requireUser } from "@/server/auth";
 import { getLLMConfig } from "@/server/env";
 import { getLLMProvider } from "@/server/llm";
+import { ExtensionPanel } from "./extension-panel";
+import { listConnectedDevices } from "./extension-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +12,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
   const provider = getLLMProvider();
   const config = getLLMConfig();
+  const devices = await listConnectedDevices();
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -59,6 +62,13 @@ export default async function SettingsPage() {
               </Notice>
             )}
           </div>
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+            Chrome extension
+          </h2>
+          <ExtensionPanel devices={devices} />
         </Card>
       </div>
     </div>

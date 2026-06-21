@@ -42,6 +42,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/_next") ||
+    pathname.startsWith("/dev") ||
+    pathname.startsWith("/api/extension") ||
     pathname.startsWith("/api/health");
 
   if (!user && !isPublic) {
