@@ -1,0 +1,18 @@
+{
+  "name": "scenearc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SceneArc — workflow software for serious AI filmmakers (monorepo root).",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @scenearc/web dev",
+    "build": "pnpm --filter @scenearc/shared build && pnpm --filter @scenearc/web build",
+    "start": "pnpm --filter @scenearc/web start",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  }
+}

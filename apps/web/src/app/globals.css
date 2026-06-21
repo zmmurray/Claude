@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+  SceneArc cinematic design system.
+  Dark charcoal background, warm off-white text, restrained amber/gold accent.
+  No neon purple, no heavy gradients — it should feel like professional
+  filmmaking software.
+*/
+@theme {
+  --color-charcoal-950: #0e0d0b;
+  --color-charcoal-900: #15140f;
+  --color-charcoal-850: #1a1812;
+  --color-charcoal-800: #211f18;
+  --color-charcoal-700: #2c291f;
+  --color-charcoal-600: #3a362a;
+
+  --color-cream-50: #f6f1e7;
+  --color-cream-100: #efe9db;
+  --color-cream-300: #cfc7b6;
+  --color-muted: #9b9384;
+  --color-muted-dim: #6f6859;
+
+  --color-amber-accent: #d4a24a;
+  --color-amber-bright: #e6b65c;
+  --color-amber-deep: #a87a2c;
+
+  --color-danger: #c2604f;
+  --color-success: #6f9b5a;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+
+  --radius-card: 0.75rem;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-charcoal-900);
+  color: var(--color-cream-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Thin, restrained scrollbars to keep the cinematic feel. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-charcoal-600) transparent;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-amber-accent) 35%, transparent);
+}
