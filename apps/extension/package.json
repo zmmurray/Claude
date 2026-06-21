@@ -1,0 +1,25 @@
+{
+  "name": "@scenearc/extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SceneArc companion Chrome extension (Manifest V3).",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@scenearc/config": "workspace:*",
+    "@scenearc/shared": "workspace:*",
+    "@types/chrome": "^0.0.299",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "esbuild": "^0.24.2",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,28 +1,11 @@
 import "server-only";
 
-import { createHash, randomBytes, randomInt } from "node:crypto";
-
 import type { ExtensionAccount } from "@scenearc/shared";
 
 import { createSupabaseServiceClient } from "@/lib/supabase/server";
+import { generatePairingCode, generateToken, hashToken, PAIRING_TTL_MS } from "./tokens-core";
 
-const PAIRING_TTL_MS = 10 * 60 * 1000; // 10 minutes
-// Unambiguous alphabet (no 0/O/1/I).
-const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-export function generatePairingCode(): string {
-  let code = "";
-  for (let i = 0; i < 8; i += 1) code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
-  return `${code.slice(0, 4)}-${code.slice(4)}`;
-}
-
-export function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
-}
-
-function generateToken(): string {
-  return randomBytes(32).toString("hex");
-}
+export { generatePairingCode, hashToken, PAIRING_TTL_MS };
 
 export interface RedeemResult {
   token: string;
@@ -95,5 +78,3 @@ export async function validateBearerToken(authorization: string | null): Promise
   const { data: userResult } = await supabase.auth.admin.getUserById(row.user_id);
   return { userId: row.user_id, email: userResult.user?.email ?? "" };
 }
-
-export { PAIRING_TTL_MS };

@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "SceneArc",
+  "version": "0.1.0",
+  "description": "Prepare SceneArc prompts on generation sites and import results back into your project.",
+  "action": { "default_title": "SceneArc" },
+  "background": { "service_worker": "background.js" },
+  "side_panel": { "default_path": "sidepanel.html" },
+  "permissions": ["storage", "sidePanel", "tabs", "scripting"],
+  "host_permissions": [
+    "https://*.vercel.app/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.vercel.app/*", "http://localhost/*", "http://127.0.0.1/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

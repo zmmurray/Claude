@@ -8,6 +8,11 @@ dist/
 out/
 *.tsbuildinfo
 
+# Exception: ship the prebuilt Chrome extension so non-coders can load it
+# without a build step (see apps/extension/README.md).
+!apps/extension/dist/
+!apps/extension/dist/**
+
 # Environment / secrets — never commit real keys
 .env
 .env.local

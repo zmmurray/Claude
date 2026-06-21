@@ -2,8 +2,9 @@
 
 _Last updated: 2026-06-21_
 
-**Current phase:** Phase One — Web application foundation
-**Overall Phase One status:** ✅ Complete — deployed and verified live by the owner
+**Current phase:** Phase Two — Chrome extension & mock generator
+**Phase One status:** ✅ Complete — deployed and verified live by the owner
+**Phase Two status:** 🟡 Built — awaiting desktop (Chrome) testing by the owner
 
 ---
 
@@ -14,10 +15,10 @@ run the full workflow live: create account → sign in → create project → pa
 script → analyze (free mock mode) → edit & approve breakdown → open a scene →
 create and copy a prompt package, with data surviving refreshes.
 
-Automated checks all pass: 26 tests, type checking, and the production build.
-
-Phase Two (Chrome extension) has **not** been started and will not begin until
-the owner approves it.
+Phase Two (Chrome extension + mock generator) is now **built** and passing all
+automated checks (34 tests, type checking, web build, extension build). It needs
+the owner to apply one database migration and test it in desktop Chrome. See the
+Phase Two section below.
 
 ---
 
@@ -99,3 +100,55 @@ the owner approves it.
   Draft import is out of scope for Phase One.
 - Reference-image upload is wired to Supabase Storage but hasn't been exercised
   in the live click-through.
+
+---
+
+# Phase Two — Chrome extension & mock generator
+
+**Status:** 🟡 Built and passing all automated checks; needs the owner to load
+the extension in desktop Chrome and run the click-through.
+
+## What was built
+- Manifest V3 extension (`apps/extension`): background service worker, content
+  script, React **side panel**, built with esbuild to `apps/extension/dist`
+  (committed so it can be loaded without a build step).
+- **Secure pairing:** one-time codes (10-min expiry, single use) exchanged for a
+  hashed bearer token; disconnect/revoke from Settings.
+- **Web API** for the extension: `/api/extension/pair`, `/context`, `/results`,
+  `/results/[id]/decision` (CORS-enabled, Bearer-auth, RLS-safe).
+- **Generation task flow:** "Send to extension" from a prompt package creates an
+  active task the extension picks up.
+- **Dev-only mock generator** at `/dev/mock-generator` (fake image + video
+  results, selection, download).
+- **Platform-adapter architecture** (`src/adapters`) with the mock adapter; real
+  platforms slot in for Phase Three.
+- Result import (auto + manual upload), approve / reject / request revision, both
+  in the extension and on the web package page.
+
+## Migrations to apply
+- `0003_extension.sql` — pairing, tokens, results; task columns.
+
+## Phase Two acceptance criteria
+| # | Criterion | Status |
+|---|---|---|
+| 1 | Extension loads into Chrome | 🟡 Built — load `apps/extension/dist` |
+| 2 | Pairs with the correct account | 🟡 Built — needs desktop test |
+| 3 | Shows active project and scene | 🟡 Built |
+| 4 | Recognizes the mock generator | 🟡 Built (adapter) |
+| 5 | Inserts the prompt after Insert Prompt | 🟡 Built |
+| 6 | User manually clicks Generate | ✅ By design (never auto-clicked) |
+| 7 | Detects fake results | 🟡 Built |
+| 8 | User selects one result | 🟡 Built |
+| 9 | Result imported into SceneArc | 🟡 Built |
+| 10 | Attaches to project/scene/task/package | 🟡 Built |
+| 11 | Approve / reject / request revision | 🟡 Built |
+| 12 | Manual upload fallback works | 🟡 Built |
+| 13 | Refresh doesn't lose state | 🟡 Built (chrome.storage) |
+| 14 | Tests pass | ✅ 34 passing |
+| 15 | Extension build succeeds | ✅ Passing |
+| 16 | Plain-English install/test instructions | ✅ apps/extension/README.md |
+
+## What the owner needs to do to test
+1. Apply migration `0003_extension.sql` in Supabase (SQL Editor).
+2. On a desktop with Chrome, follow `apps/extension/README.md` to load and pair
+   the extension, then run the mock-generator workflow.
