@@ -46,6 +46,14 @@ export const WardrobeNoteSchema = z.object({
 });
 export type WardrobeNote = z.infer<typeof WardrobeNoteSchema>;
 
+/** A single line of dialogue, optionally attributed to a character. */
+export const DialogueLineSchema = z.object({
+  /** Optional reference to the speaking character's key. */
+  characterKey: EntityKey.optional(),
+  line: z.string().min(1).max(2000),
+});
+export type DialogueLine = z.infer<typeof DialogueLineSchema>;
+
 /** A scene in the script with its full breakdown. */
 export const SceneSchema = z.object({
   key: EntityKey,
@@ -63,6 +71,8 @@ export const SceneSchema = z.object({
   wardrobe: z.array(WardrobeNoteSchema).default([]),
   continuityNotes: z.array(z.string().max(1000)).default([]),
   beats: z.array(SceneBeatSchema).default([]),
+  /** Dialogue lines spoken in this scene, in order. */
+  dialogue: z.array(DialogueLineSchema).default([]),
   /** Generation stages SceneArc suggests for this scene. */
   suggestedStages: z.array(ProductionStage).default([]),
 });

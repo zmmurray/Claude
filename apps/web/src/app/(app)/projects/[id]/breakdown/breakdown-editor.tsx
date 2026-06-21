@@ -68,6 +68,9 @@ export function BreakdownEditor({
   const updateScene = (i: number, patch: Partial<ScriptAnalysis["scenes"][number]>) =>
     update({ scenes: analysis.scenes.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) });
 
+  const nameForKey = (key?: string) =>
+    analysis.characters.find((c) => c.key === key)?.name ?? "—";
+
   return (
     <div className="space-y-8">
       {/* Characters ---------------------------------------------------------- */}
@@ -97,14 +100,6 @@ export function BreakdownEditor({
                     rows={2}
                     value={c.description}
                     onChange={(e) => updateCharacter(i, { description: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Relationships (one per line)</Label>
-                  <Textarea
-                    rows={2}
-                    value={c.relationships.join("\n")}
-                    onChange={(e) => updateCharacter(i, { relationships: linesToArray(e.target.value) })}
                   />
                 </div>
                 <RemoveButton
@@ -177,6 +172,7 @@ export function BreakdownEditor({
                   wardrobe: [],
                   continuityNotes: [],
                   beats: [],
+                  dialogue: [],
                   suggestedStages: ["scene_still"],
                 },
               ],
@@ -300,6 +296,20 @@ export function BreakdownEditor({
                     }
                   />
                 </div>
+
+                {s.dialogue.length > 0 ? (
+                  <div>
+                    <Label>Dialogue</Label>
+                    <div className="space-y-1 rounded-md border border-charcoal-700 bg-charcoal-900 p-3 text-sm">
+                      {s.dialogue.map((d, di) => (
+                        <p key={di}>
+                          <span className="text-amber-accent">{nameForKey(d.characterKey)}:</span>{" "}
+                          <span className="text-cream-100">{d.line}</span>
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
 
                 <RemoveButton
                   label="Remove scene"

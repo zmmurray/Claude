@@ -8,7 +8,7 @@ INT. POLICE PRECINCT - NIGHT
 
 Maya drops a heavy file on the desk. Rain streaks the windows.
 
-MAYA
+MAYA (40s, weary detective)
 This one ended careers.
 
 LEO
@@ -72,6 +72,41 @@ describe("MockLLMProvider", () => {
     for (const scene of analysis.scenes) {
       for (const k of scene.characterKeys) expect(charKeys.has(k)).toBe(true);
     }
+  });
+
+  it("captures dialogue spoken under character cues", async () => {
+    const { analysis } = await provider.analyzeScript({
+      scriptText: SAMPLE_SCREENPLAY,
+      creativeDirection: {
+        styleAndTone: "",
+        genre: "",
+        period: "",
+        aspectRatio: "",
+        cinematographyNotes: "",
+        additionalInstructions: "",
+      },
+    });
+    const allDialogue = analysis.scenes.flatMap((s) => s.dialogue);
+    expect(allDialogue.length).toBeGreaterThanOrEqual(3);
+    expect(allDialogue.some((d) => d.line.includes("ended careers"))).toBe(true);
+    const maya = analysis.characters.find((c) => c.name === "Maya");
+    expect(allDialogue.some((d) => d.characterKey === maya?.key)).toBe(true);
+  });
+
+  it("extracts character descriptions from parentheticals", async () => {
+    const { analysis } = await provider.analyzeScript({
+      scriptText: SAMPLE_SCREENPLAY,
+      creativeDirection: {
+        styleAndTone: "",
+        genre: "",
+        period: "",
+        aspectRatio: "",
+        cinematographyNotes: "",
+        additionalInstructions: "",
+      },
+    });
+    const maya = analysis.characters.find((c) => c.name === "Maya");
+    expect(maya?.description.toLowerCase()).toContain("weary");
   });
 
   it("falls back to a realistic canned example for non-screenplay text", async () => {

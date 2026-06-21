@@ -210,6 +210,7 @@ export async function persistAnalysis(
           props: s.props,
           continuity_notes: s.continuityNotes,
           wardrobe: s.wardrobe,
+          dialogue: s.dialogue,
           suggested_stages: s.suggestedStages,
           position: index,
           location_id: s.locationKey ? (locationKeyToId.get(s.locationKey) ?? null) : null,
@@ -317,6 +318,7 @@ export async function getBreakdown(projectId: string): Promise<ScriptAnalysis> {
             order: b.beat_order as number,
             description: b.description as string,
           })),
+        dialogue: (s.dialogue as ScriptAnalysis["scenes"][number]["dialogue"]) ?? [],
         suggestedStages:
           (s.suggested_stages as ScriptAnalysis["scenes"][number]["suggestedStages"]) ?? [],
       };
@@ -335,6 +337,7 @@ export interface SceneDetail {
   props: string[];
   continuityNotes: string[];
   wardrobe: { characterKey?: string; description: string }[];
+  dialogue: { characterKey?: string; line: string }[];
   location: { name: string; description: string } | null;
   characters: { key: string; name: string; description: string }[];
   beats: { order: number; description: string }[];
@@ -392,6 +395,7 @@ export async function getSceneDetail(sceneId: string): Promise<SceneDetail | nul
     props: scene.props ?? [],
     continuityNotes: scene.continuity_notes ?? [],
     wardrobe: scene.wardrobe ?? [],
+    dialogue: scene.dialogue ?? [],
     location: location ? { name: location.name, description: location.description ?? "" } : null,
     characters: (characters ?? []).map((c: Record<string, unknown>) => ({
       key: c.entity_key as string,

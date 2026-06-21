@@ -37,6 +37,7 @@ Return ONLY a JSON object (no markdown, no commentary) with this exact shape:
       "wardrobe": [ { "characterKey": string (optional), "description": string } ],
       "continuityNotes": string[],
       "beats": [ { "order": number, "description": string } ],
+      "dialogue": [ { "characterKey": string (optional), "line": string } ],
       "suggestedStages": ("character_design"|"location_design"|"scene_still"|"frameburst"|"video_lowres"|"video_final")[]
     }
   ]

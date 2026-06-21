@@ -26,6 +26,9 @@ export default async function SceneWorkspacePage({
   if (!scene) notFound();
   const packages = await listPromptPackagesForScene(sceneId);
 
+  const nameForKey = (key?: string) =>
+    scene.characters.find((c) => c.key === key)?.name ?? "—";
+
   return (
     <div>
       <PageHeader
@@ -130,6 +133,22 @@ export default async function SceneWorkspacePage({
               </InfoBlock>
             </div>
           </Card>
+
+          {scene.dialogue.length > 0 ? (
+            <Card>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">
+                Dialogue
+              </h3>
+              <div className="space-y-1.5 text-sm">
+                {scene.dialogue.map((d, i) => (
+                  <p key={i}>
+                    <span className="text-amber-accent">{nameForKey(d.characterKey)}:</span>{" "}
+                    <span className="text-cream-100">{d.line}</span>
+                  </p>
+                ))}
+              </div>
+            </Card>
+          ) : null}
 
           {packages.length > 0 ? (
             <Card>
