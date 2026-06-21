@@ -3,22 +3,21 @@
 _Last updated: 2026-06-21_
 
 **Current phase:** Phase One — Web application foundation
-**Overall Phase One status:** 🟡 Code complete & verified locally — waiting on your Supabase project to run the live click-through
+**Overall Phase One status:** ✅ Complete — deployed and verified live by the owner
 
 ---
 
 ## Quick summary (plain English)
 
-The entire Phase One application is built. All the automated checks pass:
-tests (23), type checking, and the production build. Mock mode works, so the
-whole workflow can run without spending a cent.
+Phase One is done. The app is deployed (Vercel + Supabase) and the owner has
+run the full workflow live: create account → sign in → create project → paste
+script → analyze (free mock mode) → edit & approve breakdown → open a scene →
+create and copy a prompt package, with data surviving refreshes.
 
-**What's left needs you:** the app stores logins and data in a service called
-**Supabase**. To run the real click-through (create account → project → analyze
-→ approve → prompt package), I need you to create a free Supabase project and
-share its keys. Step-by-step instructions are in NONCODER_GUIDE.md and in my
-chat message. Once you do that, I'll connect it, load the database, and verify
-everything end-to-end.
+Automated checks all pass: 26 tests, type checking, and the production build.
+
+Phase Two (Chrome extension) has **not** been started and will not begin until
+the owner approves it.
 
 ---
 
@@ -44,8 +43,8 @@ everything end-to-end.
 - [x] Automated tests (23 passing)
 - [x] Typecheck passes
 - [x] Production build passes
-- [ ] Live browser workflow tested ← **needs your Supabase project**
-- [ ] NONCODER_GUIDE.md finalized for Phase One testing (in progress)
+- [x] Live browser workflow tested (deployed; owner verified end-to-end)
+- [x] NONCODER_GUIDE.md finalized for Phase One testing
 
 ---
 
@@ -53,43 +52,50 @@ everything end-to-end.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Create an account | 🟡 Built — needs live test |
-| 2 | Sign in and sign out | 🟡 Built — needs live test |
-| 3 | Create a project | 🟡 Built — needs live test |
-| 4 | Paste a short script | 🟡 Built — needs live test |
-| 5 | Enter creative direction | 🟡 Built — needs live test |
-| 6 | Mock analysis returns a valid breakdown | ✅ Verified by automated tests |
-| 7 | Real LLM analysis works after a key is added | 🟡 Built — needs live test with a key |
-| 8 | Edit the breakdown | 🟡 Built — needs live test |
-| 9 | Approve the breakdown | 🟡 Built — needs live test |
-| 10 | Open one scene | 🟡 Built — needs live test |
-| 11 | View characters, location, beats, props, continuity | 🟡 Built — needs live test |
-| 12 | SceneArc creates a prompt package | ✅ Logic verified by tests; live UI needs test |
-| 13 | View and copy the prepared prompt | 🟡 Built — needs live test |
-| 14 | Refreshing the browser does not lose state | 🟡 Built (data persists in Supabase) — needs live test |
-| 15 | One user cannot access another user's project | 🟡 Built (RLS policies) — needs live test |
-| 16 | Tests pass | ✅ 23 passing |
+| 1 | Create an account | ✅ Verified live |
+| 2 | Sign in and sign out | ✅ Verified live |
+| 3 | Create a project | ✅ Verified live |
+| 4 | Paste a short script | ✅ Verified live |
+| 5 | Enter creative direction | ✅ Verified live |
+| 6 | Mock analysis returns a valid breakdown | ✅ Verified live + tests |
+| 7 | Real LLM analysis works after a key is added | 🟡 Built; not yet exercised with a real key (still on mock) |
+| 8 | Edit the breakdown | ✅ Verified live |
+| 9 | Approve the breakdown | ✅ Verified live |
+| 10 | Open one scene | ✅ Verified live |
+| 11 | View characters, location, beats, props, continuity | ✅ Verified live |
+| 12 | SceneArc creates a prompt package | ✅ Verified live + tests |
+| 13 | View and copy the prepared prompt | ✅ Verified live |
+| 14 | Refreshing the browser does not lose state | ✅ Verified live |
+| 15 | One user cannot access another user's project | 🟡 Enforced by RLS; optional 2-account spot check recommended |
+| 16 | Tests pass | ✅ 26 passing |
 | 17 | Type checking passes | ✅ Passing |
 | 18 | Production build passes | ✅ Passing |
 | 19 | PROJECT_STATUS.md is current | ✅ |
-| 20 | NONCODER_GUIDE.md explains how to test | 🟡 In progress |
+| 20 | NONCODER_GUIDE.md explains how to test | ✅ |
 
 ---
 
-## What I need from you right now
+## Deployment (live)
 
-A free **Supabase** project, so I can connect login + database + storage and run
-the live click-through. See my chat message and NONCODER_GUIDE.md for exact
-steps. (Optional, later: an Anthropic API key to switch from free mock analysis
-to real AI analysis.)
+- **Hosting:** Vercel, Root Directory `apps/web`, branch `claude/scenearc-phase-one-qdndr3`.
+- **Backend:** Supabase project `scenearc` (auth + Postgres + storage).
+- **Migrations applied:** `0001_init.sql`, `0002_add_dialogue.sql`.
+- **Auth:** email confirmation turned OFF for frictionless testing.
+- **Analyzer:** free mock mode (`LLM_PROVIDER` unset).
 
-## Known limitations so far
+## Optional follow-ups (owner's choice, not blockers)
 
-- The live click-through has not been run yet (it needs your Supabase project).
-  Everything that can be verified without it — schema validation, mock analysis,
-  real-response parsing, prompt compilation, type checking, and the production
-  build — passes.
-- Script file upload supports plain-text scripts (.txt/.fountain/.md). PDF/Final
-  Draft parsing is out of scope for Phase One.
-- Reference-image upload is wired to Supabase Storage but, like all data
-  features, is only verifiable once the live project is connected.
+- **Two-account privacy check** (criterion 15): sign up a second account and
+  confirm it cannot see the first account's project.
+- **Turn on real AI analysis** (criterion 7): add an Anthropic API key in Vercel
+  for richer extraction (props inference, deeper descriptions).
+- Re-enable email confirmation and set the Supabase Site URL before any public launch.
+
+## Known limitations
+
+- Mock mode is a simple pattern-matcher: it reads parenthetical descriptions and
+  dialogue, but does not infer props/wardrobe/continuity — that needs the real AI.
+- Script file upload supports plain-text scripts (.txt/.fountain/.md); PDF/Final
+  Draft import is out of scope for Phase One.
+- Reference-image upload is wired to Supabase Storage but hasn't been exercised
+  in the live click-through.
