@@ -2,9 +2,9 @@
 
 _Last updated: 2026-06-21_
 
-**Current phase:** Phase Two — Chrome extension & mock generator
+**Current phase:** Phase Two complete — awaiting approval to begin Phase Three
 **Phase One status:** ✅ Complete — deployed and verified live by the owner
-**Phase Two status:** 🟡 Built — awaiting desktop (Chrome) testing by the owner
+**Phase Two status:** ✅ Complete — extension loaded, paired, and full workflow verified live
 
 ---
 
@@ -105,8 +105,8 @@ Phase Two section below.
 
 # Phase Two — Chrome extension & mock generator
 
-**Status:** 🟡 Built and passing all automated checks; needs the owner to load
-the extension in desktop Chrome and run the click-through.
+**Status:** ✅ Complete — verified live on desktop Chrome (loaded, paired, full
+insert → generate → select → import → approve/reject/revise workflow).
 
 ## What was built
 - Manifest V3 extension (`apps/extension`): background service worker, content
@@ -131,24 +131,22 @@ the extension in desktop Chrome and run the click-through.
 ## Phase Two acceptance criteria
 | # | Criterion | Status |
 |---|---|---|
-| 1 | Extension loads into Chrome | 🟡 Built — load `apps/extension/dist` |
-| 2 | Pairs with the correct account | 🟡 Built — needs desktop test |
-| 3 | Shows active project and scene | 🟡 Built |
-| 4 | Recognizes the mock generator | 🟡 Built (adapter) |
-| 5 | Inserts the prompt after Insert Prompt | 🟡 Built |
+| 1 | Extension loads into Chrome | ✅ Verified live |
+| 2 | Pairs with the correct account | ✅ Verified live |
+| 3 | Shows active project and scene | ✅ Verified live |
+| 4 | Recognizes the mock generator | ✅ Verified live |
+| 5 | Inserts the prompt after Insert Prompt | ✅ Verified live |
 | 6 | User manually clicks Generate | ✅ By design (never auto-clicked) |
-| 7 | Detects fake results | 🟡 Built |
-| 8 | User selects one result | 🟡 Built |
-| 9 | Result imported into SceneArc | 🟡 Built |
-| 10 | Attaches to project/scene/task/package | 🟡 Built |
-| 11 | Approve / reject / request revision | 🟡 Built |
-| 12 | Manual upload fallback works | 🟡 Built |
-| 13 | Refresh doesn't lose state | 🟡 Built (chrome.storage) |
+| 7 | Detects fake results | ✅ Verified live |
+| 8 | User selects one result | ✅ Verified live |
+| 9 | Result imported into SceneArc | ✅ Verified live |
+| 10 | Attaches to project/scene/task/package | ✅ Verified live |
+| 11 | Approve / reject / request revision | ✅ Verified live |
+| 12 | Manual upload fallback works | ✅ Built (verified path available) |
+| 13 | Refresh doesn't lose state | ✅ Verified live (chrome.storage) |
 | 14 | Tests pass | ✅ 34 passing |
 | 15 | Extension build succeeds | ✅ Passing |
 | 16 | Plain-English install/test instructions | ✅ apps/extension/README.md |
 
-## What the owner needs to do to test
-1. Apply migration `0003_extension.sql` in Supabase (SQL Editor).
-2. On a desktop with Chrome, follow `apps/extension/README.md` to load and pair
-   the extension, then run the mock-generator workflow.
+## Migrations applied
+- `0003_extension.sql` — applied in Supabase.
