@@ -547,13 +547,20 @@ export interface GenerationTaskRow {
   status: string;
   is_active: boolean;
   created_at: string;
+  provider: string | null;
+  provider_model: string | null;
+  provider_task_id: string | null;
+  provider_status: string | null;
+  error_message: string | null;
 }
 
 export async function getTaskForPackage(packageId: string): Promise<GenerationTaskRow | null> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("generation_tasks")
-    .select("id, status, is_active, created_at")
+    .select(
+      "id, status, is_active, created_at, provider, provider_model, provider_task_id, provider_status, error_message",
+    )
     .eq("prompt_package_id", packageId)
     .order("created_at", { ascending: false })
     .limit(1)

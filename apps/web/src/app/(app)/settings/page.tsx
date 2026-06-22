@@ -5,6 +5,8 @@ import { getLLMConfig } from "@/server/env";
 import { getLLMProvider } from "@/server/llm";
 import { ExtensionPanel } from "./extension-panel";
 import { listConnectedDevices } from "./extension-actions";
+import { FreepikPanel } from "./freepik-panel";
+import { hasFreepikKey } from "@/server/generation/credentials";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +15,7 @@ export default async function SettingsPage() {
   const provider = getLLMProvider();
   const config = getLLMConfig();
   const devices = await listConnectedDevices();
+  const freepikConnected = await hasFreepikKey();
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -69,6 +72,13 @@ export default async function SettingsPage() {
             Chrome extension
           </h2>
           <ExtensionPanel devices={devices} />
+        </Card>
+
+        <Card>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+            Generation — Freepik
+          </h2>
+          <FreepikPanel hasKey={freepikConnected} />
         </Card>
       </div>
     </div>

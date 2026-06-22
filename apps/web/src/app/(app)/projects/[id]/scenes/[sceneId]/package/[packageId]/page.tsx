@@ -4,8 +4,11 @@ import { Badge, Button, Card, Input, LinkButton, Notice, PageHeader } from "@/co
 import { CopyButton } from "@/components/copy-button";
 import { requireUser } from "@/server/auth";
 import { listResultsForTask } from "@/server/extension/service";
+import { hasFreepikKey } from "@/server/generation/credentials";
+import { getGenerationProvider } from "@/server/generation";
 import { getPromptPackage, getTaskForPackage } from "@/server/repository";
 import { decideResultAction, startTaskAction } from "./actions";
+import { FreepikGenerator } from "./freepik-generator";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +34,8 @@ export default async function PromptPackagePage({
   const user = await requireUser();
   const task = await getTaskForPackage(packageId);
   const results = task ? await listResultsForTask(user.id, task.id) : [];
+  const freepikConnected = await hasFreepikKey();
+  const models = getGenerationProvider().listModels();
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -110,6 +115,31 @@ export default async function PromptPackagePage({
           </Notice>
         </div>
       ) : null}
+
+      <Card className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
+          Generate directly (Freepik)
+        </h2>
+        <FreepikGenerator
+          projectId={id}
+          sceneId={sceneId}
+          packageId={packageId}
+          hasKey={freepikConnected}
+          models={models}
+          task={
+            task
+              ? {
+                  id: task.id,
+                  status: task.status,
+                  provider: task.provider,
+                  providerStatus: task.provider_status,
+                  providerTaskId: task.provider_task_id,
+                  errorMessage: task.error_message,
+                }
+              : null
+          }
+        />
+      </Card>
 
       <Card className="mt-6">
         <div className="mb-3 flex items-center justify-between">

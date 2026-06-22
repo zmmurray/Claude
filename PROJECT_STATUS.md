@@ -2,9 +2,10 @@
 
 _Last updated: 2026-06-21_
 
-**Current phase:** Phase Two complete — awaiting approval to begin Phase Three
+**Current phase:** Phase Three — first real platform (Freepik)
 **Phase One status:** ✅ Complete — deployed and verified live by the owner
 **Phase Two status:** ✅ Complete — extension loaded, paired, and full workflow verified live
+**Phase Three status:** 🟡 Built (Freepik: Nano Banana + Seedance) — awaiting owner's Freepik key to test live
 
 ---
 
@@ -15,10 +16,13 @@ run the full workflow live: create account → sign in → create project → pa
 script → analyze (free mock mode) → edit & approve breakdown → open a scene →
 create and copy a prompt package, with data surviving refreshes.
 
-Phase Two (Chrome extension + mock generator) is now **built** and passing all
-automated checks (34 tests, type checking, web build, extension build). It needs
-the owner to apply one database migration and test it in desktop Chrome. See the
-Phase Two section below.
+Phase Two (Chrome extension + mock generator) is **complete and verified live**.
+
+Phase Three (first real platform — **Freepik**, with Nano Banana images and
+Seedance video, via your own API key) is now **built** and passing all automated
+checks (41 tests, type checking, web build). It needs the owner to apply
+migration `0004` and add a Freepik API key to test live. See the Phase Three
+section below.
 
 ---
 
@@ -150,3 +154,55 @@ insert → generate → select → import → approve/reject/revise workflow).
 
 ## Migrations applied
 - `0003_extension.sql` — applied in Supabase.
+
+---
+
+# Phase Three — First real platform (Freepik)
+
+**Status:** 🟡 Built and passing all automated checks (41 tests, typecheck, web
+build). Needs the owner to apply migration `0004` and add a Freepik API key to
+test live. (This build sandbox cannot reach api.freepik.com, so live calls are
+verified on Vercel by the owner.)
+
+## Platform decision
+- **Freepik API** chosen as the first real integration — it's an official,
+  multi-model gateway using the user's own key. Models wired: **Nano Banana**
+  (Google Gemini image) for stills and **Seedance** (video). Reviewed terms:
+  programmatic API use is supported; paid plans include a commercial license;
+  inputs/outputs are not used for training; no IP indemnification (noted).
+
+## What was built
+- **Replaceable generation-provider interface** (`src/server/generation`)
+  mirroring the LLM provider pattern; `FreepikProvider` is the first.
+- **Encrypted credential storage** (`provider_credentials`, AES-256-GCM) so each
+  user stores their own Freepik key; server-side only, with a `FREEPIK_API_KEY`
+  env fallback.
+- **Settings → Generation:** save / replace / remove the Freepik key.
+- **Prompt package → Generate directly (Freepik):** pick Nano Banana (image) or
+  Seedance 2.0 (video), confirm the paid notice, generate; async video is polled
+  via "Check status"; results auto-import and show in the results grid for
+  approve / reject / revise.
+- Seedance (image-to-video) uses a recent approved image of the scene as its
+  source; the model slugs live in one place in `freepik.ts` for easy updates.
+- Tests: Freepik response parsing + model registry; credential encryption
+  round-trip.
+
+## Migrations to apply
+- `0004_generation.sql` — `provider_credentials` + generation_tasks provider columns.
+
+## Guardrails honored
+- Official API + the user's own key; no bypassing anything; no third-party
+  passwords stored; costs surfaced with a confirm-before-paid notice.
+
+## What the owner needs to do to test
+1. Apply `0004_generation.sql` in Supabase (SQL Editor).
+2. (Optional) set `CREDENTIALS_SECRET` in Vercel; otherwise the service-role key
+   is used to encrypt stored keys.
+3. Get a Freepik API key (Freepik plan with API access), add it in
+   **Settings → Generation**, then use **Generate directly (Freepik)** on a
+   scene's prompt package.
+
+## Known limitations / to confirm live
+- Exact Freepik model slugs/response shapes are coded defensively from the docs;
+  if Freepik renames a model, update `FREEPIK_MODELS` in `freepik.ts` (one place).
+- Video is async; status is checked on demand (no background worker yet).
