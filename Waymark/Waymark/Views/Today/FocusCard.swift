@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One focus item. The NEXT ACTION is the hero — large and warm. The project name
-/// is context above it. The reason sits below so the ranking is trustworthy.
+/// One focus item. The NEXT STEP is the hero — large and clear. The quest name is
+/// quiet context above it. The reason sits below so the ranking feels trustworthy.
 struct FocusCard: View {
     @EnvironmentObject var store: DataStore
     let ranked: RankedQuest
@@ -12,10 +12,9 @@ struct FocusCard: View {
     private var quest: Quest { ranked.quest }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: isLeader ? 18 : 12) {
             // Context row
             HStack(spacing: 10) {
-                AxisChip(axis: quest.axis)
                 Text(quest.name)
                     .font(Theme.label)
                     .foregroundStyle(Theme.inkSoft)
@@ -24,71 +23,54 @@ struct FocusCard: View {
                 DeadlinePill(deadline: quest.deadline)
             }
 
-            // The hero: the concrete next action
-            HStack(alignment: .top, spacing: 12) {
-                if isLeader {
-                    Image(systemName: "location.north.line.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Theme.accent)
-                        .padding(.top, 3)
-                }
-                Text(quest.nextAction)
-                    .font(Theme.display(isLeader ? 26 : 21, weight: .medium))
-                    .foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            // The hero: the concrete next step
+            Text(quest.nextStep)
+                .font(Theme.display(isLeader ? 28 : 19, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Reason
-            HStack(spacing: 7) {
-                Image(systemName: "sparkle")
-                    .font(.system(size: 9))
-                    .foregroundStyle(Theme.accent.opacity(0.8))
-                Text(ranked.reason)
-                    .font(Theme.caption)
-                    .foregroundStyle(Theme.inkSoft)
+            if isLeader {
+                HStack(spacing: 7) {
+                    Image(systemName: "sparkles").font(.system(size: 10)).foregroundStyle(Theme.moss)
+                    Text(ranked.reason).font(Theme.caption).foregroundStyle(Theme.inkSoft)
+                }
             }
 
-            Divider().overlay(Theme.hairline)
+            if isLeader { Divider().overlay(Theme.hairline) }
 
             // Actions
             HStack(spacing: 12) {
-                Button {
-                    complete()
-                } label: {
-                    Label("I did this", systemImage: "checkmark")
+                Button { complete() } label: {
+                    Label("Mark it done", systemImage: "checkmark")
                 }
-                .buttonStyle(PrimaryActionButtonStyle())
+                .buttonStyle(PrimaryActionButtonStyle(big: isLeader))
 
-                if let next = quest.stage.next {
+                if isLeader, let next = quest.stage.next {
                     Button {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            store.advanceStage(quest)
-                        }
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) { store.advanceStage(quest) }
                     } label: {
-                        Label("Advance to \(next.title)", systemImage: "arrow.up.right")
+                        Label("Move to \(next.title)", systemImage: "arrow.forward")
                     }
                     .buttonStyle(QuietButtonStyle())
                 }
 
                 Spacer()
-                StageIndicator(stage: quest.stage, tint: quest.axis.color)
+                if isLeader { StageIndicator(stage: quest.stage) }
             }
         }
-        .padding(20)
+        .padding(isLeader ? 24 : 16)
         .card(raised: isLeader, accentEdge: isLeader ? Theme.accent.opacity(0.35) : nil)
-        .shadow(color: .black.opacity(isLeader ? 0.28 : 0.16),
-                radius: isLeader ? 22 : 12, x: 0, y: isLeader ? 10 : 6)
         .scaleEffect(completing ? 0.99 : 1)
         .opacity(completing ? 0.0 : 1)
     }
 
     private func complete() {
-        // A small, weighty beat before the card settles away.
-        withAnimation(.easeIn(duration: 0.28)) { completing = true }
+        withAnimation(.easeIn(duration: 0.26)) { completing = true }
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 300_000_000)
+            try? await Task.sleep(nanoseconds: 280_000_000)
             withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
-                store.completeNextAction(quest)
+                store.completeNextStep(quest)
             }
         }
     }

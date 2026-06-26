@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 /// The single source of truth. Owns the persisted `AppData`, exposes derived views
-/// (today's focus, the strategic tracks), and saves atomically on every change.
+/// (today's focus, gentle tallies), and saves atomically on every change.
 @MainActor
 final class DataStore: ObservableObject {
     @Published private(set) var data: AppData
@@ -41,7 +41,6 @@ final class DataStore: ObservableObject {
         guard let bytes = try? Data(contentsOf: url), !bytes.isEmpty else { return AppData() }
         do { return try decoder.decode(AppData.self, from: bytes) }
         catch {
-            // Never lose a good file silently: keep a backup, start fresh.
             let backup = url.deletingPathExtension().appendingPathExtension("corrupt.json")
             try? bytes.write(to: backup, options: .atomic)
             return AppData()
@@ -53,7 +52,6 @@ final class DataStore: ObservableObject {
             let bytes = try encoder.encode(data)
             try bytes.write(to: fileURL, options: [.atomic])
         } catch {
-            // A failed save shouldn't crash the app; surfacing this is a later concern.
             #if DEBUG
             print("Waymark save failed: \(error)")
             #endif
@@ -64,33 +62,40 @@ final class DataStore: ObservableObject {
 
     var quests: [Quest] { data.quests }
 
+    var activeQuests: [Quest] {
+        data.quests.filter { !$0.isDone }.sorted { Ranking.score($0) > Ranking.score($1) }
+    }
+    var doneQuests: [Quest] {
+        data.quests.filter { $0.isDone }.sorted { ($0.createdAt) > ($1.createdAt) }
+    }
+
     var todaysFocus: [RankedQuest] { Ranking.todaysFocus(data.quests) }
+    var leadFocus: RankedQuest? { todaysFocus.first }
+    var extraFocus: [RankedQuest] { Array(todaysFocus.dropFirst()) }
 
     var needsNextStep: [Quest] { Ranking.needsNextStep(data.quests) }
 
-    var tracks: [StrategicTrack] {
-        StrategicAxis.allCases.map { StrategicTrack.make(axis: $0, events: data.events) }
-    }
-
-    func track(for axis: StrategicAxis) -> StrategicTrack {
-        StrategicTrack.make(axis: axis, events: data.events)
-    }
-
-    /// Have I done the important thing today? True once `enoughDate` is today.
     var hasDoneEnoughToday: Bool {
         guard let d = data.enoughDate else { return false }
         return Calendar.current.isDateInToday(d)
     }
 
-    /// The meaningful progress logged today, newest first — shown in the Enough state.
     var todaysProgress: [ProgressEvent] {
         data.events
             .filter { Calendar.current.isDateInToday($0.date) }
             .sorted { $0.date > $1.date }
     }
 
-    var hasAnyQuests: Bool { !data.quests.isEmpty }
+    /// Meaningful progress logged in the last 7 days — for a quiet, encouraging tally.
+    var weeklyProgressCount: Int {
+        let cal = Calendar.current
+        guard let weekAgo = cal.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
+        return data.events.filter { $0.date >= weekAgo }.count
+    }
 
+    var completedQuestCount: Int { data.quests.filter { $0.isDone }.count }
+
+    var hasAnyQuests: Bool { !data.quests.isEmpty }
     var hasActionableQuests: Bool { data.quests.contains { $0.isActionable } }
 
     // MARK: Mutations (each one saves)
@@ -109,43 +114,41 @@ final class DataStore: ObservableObject {
         save()
     }
 
-    /// Complete the current concrete step. Meaningful progress: logs an event,
-    /// clears the step (so the quest stops being pushed until a new step is named),
-    /// and, if this was today's leading focus, declares the day "enough."
-    func completeNextAction(_ quest: Quest) {
+    /// Complete the current concrete step. Logs progress, clears the step (so the quest
+    /// stops being pushed until a new one is named), and, if this was today's leading
+    /// focus, declares the day "enough."
+    func completeNextStep(_ quest: Quest) {
         guard let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
-        let isLeader = todaysFocus.first?.id == quest.id
-        let detail = data.quests[i].nextAction.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isLeader = leadFocus?.id == quest.id
+        let detail = data.quests[i].nextStep.trimmingCharacters(in: .whitespacesAndNewlines)
 
         data.events.append(ProgressEvent(
-            questID: quest.id, axis: data.quests[i].axis, kind: .completedAction,
+            questID: quest.id, kind: .completedStep,
             detail: detail.isEmpty ? "Completed a step" : detail,
             questName: data.quests[i].name
         ))
-        data.quests[i].nextAction = ""
+        data.quests[i].nextStep = ""
 
         if isLeader { data.enoughDate = Date() }
         save()
     }
 
-    /// Set or replace the concrete next step.
-    func setNextAction(_ text: String, for quest: Quest) {
+    func setNextStep(_ text: String, for quest: Quest) {
         guard let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
-        data.quests[i].nextAction = text
+        data.quests[i].nextStep = text
         save()
     }
 
-    /// Advance the quest one stage along its arc. Meaningful progress: logs an event,
-    /// and counts as winning the day if this was today's leader.
+    /// Advance the quest one stage along its arc. Counts as winning the day if it leads.
     func advanceStage(_ quest: Quest) {
         guard let i = data.quests.firstIndex(where: { $0.id == quest.id }),
               let next = data.quests[i].stage.next else { return }
-        let isLeader = todaysFocus.first?.id == quest.id
+        let isLeader = leadFocus?.id == quest.id
         let from = data.quests[i].stage
         data.quests[i].stage = next
 
         data.events.append(ProgressEvent(
-            questID: quest.id, axis: data.quests[i].axis, kind: .advancedStage,
+            questID: quest.id, kind: .advancedStage,
             detail: "\(from.title) → \(next.title)",
             questName: data.quests[i].name
         ))
@@ -160,7 +163,6 @@ final class DataStore: ObservableObject {
         save()
     }
 
-    /// Undo today's "enough" if I decide I do want to keep going.
     func reopenToday() {
         if hasDoneEnoughToday { data.enoughDate = nil; save() }
     }
@@ -173,27 +175,37 @@ final class DataStore: ObservableObject {
         func days(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: now) ?? now }
 
         let samples: [Quest] = [
-            Quest(name: "Pelagos — short film", axis: .ip, strategicWeight: 5,
+            Quest(name: "Short film — Pelagos", importance: 5,
                   deadline: Deadline(type: .hard, date: days(4)), stage: .active,
-                  nextAction: "Render shot 14",
-                  notes: "The one that matters most. Festival cut due."),
-            Quest(name: "Client brand reel", axis: .income, strategicWeight: 3,
+                  nextStep: "Render shot 14",
+                  notes: "The one that matters most."),
+            Quest(name: "Client brand reel", importance: 3,
                   deadline: Deadline(type: .soft, date: days(9)), stage: .developing,
-                  nextAction: "Lock the music selects"),
-            Quest(name: "Panel talk submission", axis: .reputation, strategicWeight: 4,
-                  deadline: Deadline(type: .hard, date: days(12)), stage: .idea,
-                  nextAction: "Draft the 200-word pitch"),
-            Quest(name: "Documentary treatment", axis: .mission, strategicWeight: 5,
+                  nextStep: "Lock the music selects"),
+            Quest(name: "Documentary treatment", importance: 5,
                   deadline: .none, stage: .developing,
-                  nextAction: "Outline act two",
-                  notes: "No deadline — exactly why the track has to keep it visible."),
-            Quest(name: "Stock footage library", axis: .income, strategicWeight: 2,
-                  deadline: .none, stage: .active,
-                  nextAction: "Tag last week's clips")
+                  nextStep: "Outline act two"),
+            Quest(name: "Photo book", importance: 2,
+                  deadline: .none, stage: .idea,
+                  nextStep: "Pick 30 favorite frames")
         ]
         for q in samples where !data.quests.contains(where: { $0.name == q.name }) {
             data.quests.append(q)
         }
         save()
+    }
+
+    /// Remove the example quests (handy after trying it out).
+    func removeSampleQuests() {
+        let names: Set<String> = ["Short film — Pelagos", "Client brand reel",
+                                  "Documentary treatment", "Photo book"]
+        data.quests.removeAll { names.contains($0.name) }
+        save()
+    }
+
+    var hasSampleQuests: Bool {
+        let names: Set<String> = ["Short film — Pelagos", "Client brand reel",
+                                  "Documentary treatment", "Photo book"]
+        return data.quests.contains { names.contains($0.name) }
     }
 }

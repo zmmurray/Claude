@@ -10,8 +10,8 @@ struct WaymarkApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(store)
-                .frame(minWidth: 900, minHeight: 620)
-                .preferredColorScheme(.dark)
+                .frame(minWidth: 880, minHeight: 600)
+                .preferredColorScheme(.light)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1040, height: 720)

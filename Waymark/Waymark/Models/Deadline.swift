@@ -17,8 +17,7 @@ enum DeadlineType: String, Codable, CaseIterable, Identifiable, Hashable {
 }
 
 /// A deadline is a *type* plus an optional date. "none" means the work has no clock
-/// on it — the long-horizon axes (Reputation, IP) often live here, which is exactly
-/// why they need the strategic tracks to stay visible.
+/// on it — those quests rank purely on how important they are to you.
 struct Deadline: Codable, Hashable {
     var type: DeadlineType
     var date: Date?

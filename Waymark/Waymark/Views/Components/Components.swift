@@ -1,31 +1,13 @@
 import SwiftUI
 
-/// A muted axis tag with its wayfinding dot.
-struct AxisChip: View {
-    let axis: StrategicAxis
-    var body: some View {
-        HStack(spacing: 6) {
-            Circle().fill(axis.color).frame(width: 7, height: 7)
-            Text(axis.shortName)
-                .font(Theme.caption)
-                .foregroundStyle(Theme.inkSoft)
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(axis.color.opacity(0.10)))
-        .overlay(Capsule().strokeBorder(axis.color.opacity(0.22), lineWidth: 1))
-    }
-}
-
 /// The quest's arc as a short row of dots — filled up to the current stage.
 struct StageIndicator: View {
     let stage: Stage
-    var tint: Color = Theme.accent
     var body: some View {
         HStack(spacing: 6) {
             ForEach(Stage.allCases) { s in
                 Circle()
-                    .fill(s.order <= stage.order ? tint.opacity(s == .done ? 1 : 0.85) : Theme.inkFaint.opacity(0.35))
+                    .fill(s.order <= stage.order ? Theme.accent.opacity(s == .done ? 1 : 0.8) : Theme.inkFaint.opacity(0.28))
                     .frame(width: 6, height: 6)
             }
             Text(stage.title)
@@ -36,22 +18,22 @@ struct StageIndicator: View {
     }
 }
 
-/// Importance as five small marks. Quiet, not a score.
-struct WeightDots: View {
-    let weight: Int
+/// Importance shown as little leaves — quiet, on-theme, never a score.
+struct ImportanceLeaves: View {
+    let importance: Int
     var body: some View {
         HStack(spacing: 3) {
             ForEach(1...5, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(i <= weight ? Theme.accent.opacity(0.9) : Theme.inkFaint.opacity(0.3))
-                    .frame(width: 4, height: i <= weight ? 11 : 7)
+                Image(systemName: i <= importance ? "leaf.fill" : "leaf")
+                    .font(.system(size: 9))
+                    .foregroundStyle(i <= importance ? Theme.moss : Theme.inkFaint.opacity(0.4))
             }
         }
-        .accessibilityLabel("Strategic weight \(weight) of 5")
+        .accessibilityLabel("Importance \(importance) of 5")
     }
 }
 
-/// A deadline shown the way it actually presses: hard/soft and how near.
+/// A deadline shown the way it actually presses.
 struct DeadlinePill: View {
     let deadline: Deadline
     var now: Date = Date()
@@ -60,8 +42,8 @@ struct DeadlinePill: View {
         switch deadline.type {
         case .none: return "No deadline"
         case .hard, .soft:
-            let kind = deadline.type == .hard ? "Hard" : "Soft"
-            guard let days = deadline.daysFromNow(now) else { return "\(kind) · no date" }
+            let kind = deadline.type == .hard ? "Due" : "Aim"
+            guard let days = deadline.daysFromNow(now) else { return "\(kind) · someday" }
             if days < 0 { return "\(kind) · \(abs(days))d overdue" }
             if days == 0 { return "\(kind) · today" }
             if days == 1 { return "\(kind) · tomorrow" }
@@ -74,45 +56,48 @@ struct DeadlinePill: View {
         case .none: return Theme.inkFaint
         case .soft: return Theme.inkSoft
         case .hard:
-            if let d = deadline.daysFromNow(now), d <= 3 { return Theme.accent }
+            if let d = deadline.daysFromNow(now), d <= 2 { return Theme.urgent }
             return Theme.inkSoft
         }
     }
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: deadline.type == .none ? "infinity" : "flag.fill")
+            Image(systemName: deadline.type == .none ? "infinity" : "calendar")
                 .font(.system(size: 9))
             Text(text).font(Theme.caption)
         }
         .foregroundStyle(tint)
         .padding(.horizontal, 9)
         .padding(.vertical, 4)
-        .background(Capsule().fill(Theme.surfaceHi.opacity(0.6)))
+        .background(Capsule().fill(Theme.surfaceHi))
         .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
     }
 }
 
-/// The warm, weighty primary action button.
+/// The warm, weighty primary action button — forest green, white text.
 struct PrimaryActionButtonStyle: ButtonStyle {
+    var big: Bool = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(Theme.bodyMed)
-            .foregroundStyle(Theme.base)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
+            .font(big ? Theme.display(16, weight: .semibold) : Theme.bodyMed)
+            .foregroundStyle(.white)
+            .padding(.horizontal, big ? 24 : 18)
+            .padding(.vertical, big ? 14 : 10)
             .background(
-                RoundedRectangle(cornerRadius: Theme.cornerS, style: .continuous)
+                RoundedRectangle(cornerRadius: big ? Theme.corner : Theme.cornerS, style: .continuous)
                     .fill(LinearGradient(colors: [Theme.accent, Theme.accentDeep],
                                          startPoint: .top, endPoint: .bottom))
             )
-            .opacity(configuration.isPressed ? 0.82 : 1)
+            .shadow(color: Theme.accent.opacity(configuration.isPressed ? 0.1 : 0.28),
+                    radius: configuration.isPressed ? 4 : 12, x: 0, y: 5)
+            .opacity(configuration.isPressed ? 0.9 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
 
-/// A quiet secondary button — outline only.
+/// A quiet secondary button.
 struct QuietButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -122,7 +107,7 @@ struct QuietButtonStyle: ButtonStyle {
             .padding(.vertical, 9)
             .background(
                 RoundedRectangle(cornerRadius: Theme.cornerS, style: .continuous)
-                    .fill(Theme.surfaceHi.opacity(configuration.isPressed ? 0.9 : 0.5))
+                    .fill(configuration.isPressed ? Theme.surfaceHi : Theme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.cornerS, style: .continuous)
@@ -131,7 +116,7 @@ struct QuietButtonStyle: ButtonStyle {
     }
 }
 
-/// Section header used across views: serif title with an optional eyebrow above.
+/// Section header: rounded title with an optional eyebrow above.
 struct SectionHeader: View {
     let title: String
     var eyebrow: String? = nil

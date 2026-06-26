@@ -14,9 +14,9 @@ enum Stage: String, Codable, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .idea:       return "Idea"
-        case .developing: return "Developing"
-        case .active:     return "Active"
-        case .delivered:  return "Delivered / Pitched"
+        case .developing: return "Planning"
+        case .active:     return "Underway"
+        case .delivered:  return "Delivered"
         case .done:       return "Done"
         }
     }

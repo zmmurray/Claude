@@ -1,34 +1,35 @@
 import SwiftUI
 
-/// Add or edit a quest. A styled sheet (not a stock Form) to keep the dark, calm look.
+/// Add or edit a quest. Kept short and friendly: a name and a first step are all that
+/// really matter; everything else has a sensible default.
 struct QuestEditorSheet: View {
     @EnvironmentObject var store: DataStore
     @Environment(\.dismiss) private var dismiss
 
-    /// nil → creating a new quest.
     let existing: Quest?
 
     @State private var name: String
-    @State private var axis: StrategicAxis
-    @State private var weight: Int
+    @State private var nextStep: String
+    @State private var importance: Int
     @State private var deadlineType: DeadlineType
     @State private var deadlineDate: Date
     @State private var stage: Stage
-    @State private var nextAction: String
     @State private var notes: String
+    @State private var showMore: Bool
     @State private var showDeleteConfirm = false
 
     init(existing: Quest?) {
         self.existing = existing
         let q = existing
         _name = State(initialValue: q?.name ?? "")
-        _axis = State(initialValue: q?.axis ?? .ip)
-        _weight = State(initialValue: q?.strategicWeight ?? 3)
+        _nextStep = State(initialValue: q?.nextStep ?? "")
+        _importance = State(initialValue: q?.importance ?? 3)
         _deadlineType = State(initialValue: q?.deadline.type ?? .none)
-        _deadlineDate = State(initialValue: q?.deadline.date ?? Date().addingTimeInterval(60 * 60 * 24 * 7))
+        _deadlineDate = State(initialValue: q?.deadline.date ?? Date().addingTimeInterval(60*60*24*7))
         _stage = State(initialValue: q?.stage ?? .idea)
-        _nextAction = State(initialValue: q?.nextAction ?? "")
         _notes = State(initialValue: q?.notes ?? "")
+        // Existing quests open with details visible; brand-new ones stay minimal.
+        _showMore = State(initialValue: q != nil)
     }
 
     private var canSave: Bool {
@@ -37,7 +38,6 @@ struct QuestEditorSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Text(existing == nil ? "New Quest" : "Edit Quest")
                     .font(Theme.titleM).foregroundStyle(Theme.ink)
@@ -49,52 +49,41 @@ struct QuestEditorSheet: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 18)
+            .padding(.horizontal, 22).padding(.vertical, 16)
 
             Divider().overlay(Theme.hairline)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 20) {
                     field("Quest name") {
-                        TextField("e.g. Pelagos — short film", text: $name)
-                            .textFieldStyle(.plain)
-                            .font(Theme.titleM)
-                            .foregroundStyle(Theme.ink)
+                        TextField("e.g. Short film — Pelagos", text: $name)
+                            .textFieldStyle(.plain).font(Theme.titleM).foregroundStyle(Theme.ink)
                     }
 
-                    field("Next concrete step", hint: "The single move you could start now. This is what the app surfaces.") {
-                        TextField("e.g. Render shot 14", text: $nextAction)
-                            .textFieldStyle(.plain)
-                            .font(Theme.body)
-                            .foregroundStyle(Theme.ink)
+                    field("First step", hint: "The one move you could start right now. This is what Waymark shows you.") {
+                        TextField("e.g. Render shot 14", text: $nextStep)
+                            .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
                     }
 
-                    field("Strategic axis", hint: "Which life goal does this serve?") {
-                        axisPicker
-                    }
+                    field("How important is it?") { importancePicker }
 
-                    field("Strategic weight", hint: "How much it matters to your real life — yours to set, 1 to 5.") {
-                        weightPicker
-                    }
-
-                    field("Stage") {
-                        stagePicker
-                    }
-
-                    field("Deadline") {
-                        deadlinePicker
-                    }
-
-                    field("Notes", hint: "Optional.") {
-                        TextEditor(text: $notes)
-                            .font(Theme.body)
-                            .foregroundStyle(Theme.ink)
-                            .scrollContentBackground(.hidden)
-                            .frame(minHeight: 64)
+                    if showMore {
+                        field("Deadline") { deadlinePicker }
+                        field("Stage", hint: "Where this quest is along its journey.") { stagePicker }
+                        field("Notes", hint: "Optional.") {
+                            TextEditor(text: $notes)
+                                .font(Theme.body).foregroundStyle(Theme.ink)
+                                .scrollContentBackground(.hidden).frame(minHeight: 56)
+                        }
+                    } else {
+                        Button { withAnimation { showMore = true } } label: {
+                            Label("Add deadline, stage, notes", systemImage: "plus.circle")
+                                .font(Theme.bodyMed).foregroundStyle(Theme.accent)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .padding(24)
+                .padding(22)
             }
             .scrollIndicators(.hidden)
 
@@ -102,89 +91,56 @@ struct QuestEditorSheet: View {
 
             HStack(spacing: 12) {
                 Spacer()
-                Button("Cancel") { dismiss() }
-                    .buttonStyle(QuietButtonStyle())
+                Button("Cancel") { dismiss() }.buttonStyle(QuietButtonStyle())
                 Button(existing == nil ? "Add quest" : "Save") { save() }
                     .buttonStyle(PrimaryActionButtonStyle())
-                    .disabled(!canSave)
-                    .opacity(canSave ? 1 : 0.5)
+                    .disabled(!canSave).opacity(canSave ? 1 : 0.5)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 18)
+            .padding(.horizontal, 22).padding(.vertical, 16)
         }
-        .frame(width: 540, height: 660)
-        .background(Theme.base)
+        .frame(width: 520, height: 600)
+        .background(Theme.bg)
         .confirmationDialog("Delete this quest?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
                 if let existing { store.delete(existing); dismiss() }
             }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Its history stays in your tracks, but the quest is removed.")
         }
     }
 
-    // MARK: Pieces
-
     @ViewBuilder
     private func field<Content: View>(_ title: String, hint: String? = nil, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 7) {
             Eyebrow(text: title)
             content()
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .card()
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading).card()
             if let hint {
                 Text(hint).font(Theme.caption).foregroundStyle(Theme.inkFaint)
             }
         }
     }
 
-    private var axisPicker: some View {
+    private var importancePicker: some View {
         HStack(spacing: 8) {
-            ForEach(StrategicAxis.allCases) { a in
-                let selected = a == axis
-                Button { axis = a } label: {
-                    HStack(spacing: 6) {
-                        Circle().fill(a.color).frame(width: 7, height: 7)
-                        Text(a.shortName).font(Theme.caption)
-                    }
-                    .foregroundStyle(selected ? Theme.ink : Theme.inkSoft)
-                    .padding(.horizontal, 10).padding(.vertical, 7)
-                    .background(Capsule().fill(selected ? a.color.opacity(0.18) : Theme.surfaceHi.opacity(0.5)))
-                    .overlay(Capsule().strokeBorder(selected ? a.color.opacity(0.5) : Theme.hairline, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private var weightPicker: some View {
-        HStack(spacing: 10) {
             ForEach(1...5, id: \.self) { i in
-                Button { weight = i } label: {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(i <= weight ? Theme.accent.opacity(0.9) : Theme.surfaceHi)
-                        .frame(width: 30, height: 22 + CGFloat(i) * 6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 4)
-                                .strokeBorder(i <= weight ? Theme.accentDeep : Theme.hairline, lineWidth: 1)
-                        )
+                Button { importance = i } label: {
+                    Image(systemName: i <= importance ? "leaf.fill" : "leaf")
+                        .font(.system(size: 18))
+                        .foregroundStyle(i <= importance ? Theme.moss : Theme.inkFaint.opacity(0.45))
                 }
                 .buttonStyle(.plain)
             }
             Spacer()
-            Text(weightLabel).font(Theme.caption).foregroundStyle(Theme.inkSoft)
+            Text(importanceLabel).font(Theme.caption).foregroundStyle(Theme.inkSoft)
         }
     }
-
-    private var weightLabel: String {
-        switch weight {
+    private var importanceLabel: String {
+        switch importance {
         case 5: return "Essential"
         case 4: return "High"
-        case 3: return "Meaningful"
+        case 3: return "Matters"
         case 2: return "Minor"
-        default: return "Background"
+        default: return "Someday"
         }
     }
 
@@ -193,11 +149,11 @@ struct QuestEditorSheet: View {
             ForEach(Stage.allCases) { s in
                 let selected = s == stage
                 Button { stage = s } label: {
-                    Text(s == .delivered ? "Delivered" : s.title)
+                    Text(s.title)
                         .font(Theme.caption)
-                        .foregroundStyle(selected ? Theme.base : Theme.inkSoft)
-                        .padding(.horizontal, 10).padding(.vertical, 7)
-                        .background(Capsule().fill(selected ? Theme.accent : Theme.surfaceHi.opacity(0.5)))
+                        .foregroundStyle(selected ? .white : Theme.inkSoft)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Capsule().fill(selected ? Theme.accent : Theme.surfaceHi))
                 }
                 .buttonStyle(.plain)
             }
@@ -207,38 +163,38 @@ struct QuestEditorSheet: View {
     private var deadlinePicker: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
-                ForEach(DeadlineType.allCases) { t in
-                    let selected = t == deadlineType
-                    Button { deadlineType = t } label: {
-                        Text(t.label)
-                            .font(Theme.caption)
-                            .foregroundStyle(selected ? Theme.base : Theme.inkSoft)
-                            .padding(.horizontal, 12).padding(.vertical, 7)
-                            .background(Capsule().fill(selected ? Theme.accent : Theme.surfaceHi.opacity(0.5)))
-                    }
-                    .buttonStyle(.plain)
-                }
+                deadlineChip("No deadline", .none)
+                deadlineChip("Target date", .soft)
+                deadlineChip("Hard deadline", .hard)
             }
             if deadlineType != .none {
                 DatePicker("", selection: $deadlineDate, displayedComponents: .date)
-                    .datePickerStyle(.field)
-                    .labelsHidden()
-                    .tint(Theme.accent)
+                    .datePickerStyle(.field).labelsHidden().tint(Theme.accent)
             }
         }
+    }
+    private func deadlineChip(_ label: String, _ t: DeadlineType) -> some View {
+        let selected = deadlineType == t
+        return Button { deadlineType = t } label: {
+            Text(label)
+                .font(Theme.caption)
+                .foregroundStyle(selected ? .white : Theme.inkSoft)
+                .padding(.horizontal, 11).padding(.vertical, 6)
+                .background(Capsule().fill(selected ? Theme.accent : Theme.surfaceHi))
+        }
+        .buttonStyle(.plain)
     }
 
     private func save() {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let deadline = Deadline(type: deadlineType, date: deadlineType == .none ? nil : deadlineDate)
-        var quest = existing ?? Quest(name: trimmed, axis: axis)
+        var quest = existing ?? Quest(name: trimmed)
         quest.name = trimmed
-        quest.axis = axis
-        quest.strategicWeight = weight
+        quest.importance = importance
         quest.deadline = deadline
         quest.stage = stage
-        quest.nextAction = nextAction.trimmingCharacters(in: .whitespacesAndNewlines)
+        quest.nextStep = nextStep.trimmingCharacters(in: .whitespacesAndNewlines)
         quest.notes = notes
         store.upsert(quest)
         dismiss()
@@ -255,31 +211,25 @@ struct NextStepSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             VStack(alignment: .leading, spacing: 6) {
-                AxisChip(axis: quest.axis)
                 Text(quest.name).font(Theme.titleM).foregroundStyle(Theme.ink)
                 Text("What's one small move you could actually start?")
                     .font(Theme.body).foregroundStyle(Theme.inkSoft)
             }
             TextField("e.g. Sketch the opening shot list", text: $text)
-                .textFieldStyle(.plain)
-                .font(Theme.body)
-                .foregroundStyle(Theme.ink)
-                .padding(12)
-                .card()
+                .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
+                .padding(12).card()
             HStack {
                 Spacer()
                 Button("Cancel") { dismiss() }.buttonStyle(QuietButtonStyle())
                 Button("Set step") {
                     let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !t.isEmpty { store.setNextAction(t, for: quest) }
+                    if !t.isEmpty { store.setNextStep(t, for: quest) }
                     dismiss()
                 }
                 .buttonStyle(PrimaryActionButtonStyle())
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(24)
-        .frame(width: 460)
-        .background(Theme.base)
+        .padding(22).frame(width: 440).background(Theme.bg)
     }
 }

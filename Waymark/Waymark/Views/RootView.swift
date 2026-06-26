@@ -1,27 +1,18 @@
 import SwiftUI
 
 enum Destination: String, CaseIterable, Identifiable {
-    case today, quests, tracks
+    case today, quests
     var id: String { rawValue }
     var title: String {
         switch self {
         case .today:  return "Today"
         case .quests: return "Quests"
-        case .tracks: return "Tracks"
         }
     }
     var icon: String {
         switch self {
-        case .today:  return "sun.horizon"
-        case .quests: return "map"
-        case .tracks: return "chart.line.uptrend.xyaxis"
-        }
-    }
-    var subtitle: String {
-        switch self {
-        case .today:  return "What deserves today"
-        case .quests: return "Every project"
-        case .tracks: return "The long game"
+        case .today:  return "flag.fill"
+        case .quests: return "map.fill"
         }
     }
 }
@@ -33,21 +24,20 @@ struct RootView: View {
     var body: some View {
         NavigationSplitView {
             Sidebar(selection: $selection)
-                .navigationSplitViewColumnWidth(min: 208, ideal: 224, max: 260)
+                .navigationSplitViewColumnWidth(min: 184, ideal: 196, max: 220)
         } detail: {
             ZStack {
                 AppBackground()
                 Group {
                     switch selection {
-                    case .today:  TodayView()
+                    case .today:  TodayView(goToQuests: { selection = .quests })
                     case .quests: QuestsView()
-                    case .tracks: TracksView()
                     }
                 }
                 .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: selection)
+        .animation(.easeInOut(duration: 0.22), value: selection)
     }
 }
 
@@ -60,52 +50,31 @@ private struct Sidebar: View {
             AppBackground()
             VStack(alignment: .leading, spacing: 0) {
                 // Wordmark
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "mountain.2.fill")
-                            .font(.system(size: 15))
+                HStack(spacing: 9) {
+                    ZStack {
+                        Circle().fill(Theme.accentWash).frame(width: 30, height: 30)
+                        Image(systemName: "flag.fill")
+                            .font(.system(size: 13))
                             .foregroundStyle(Theme.accent)
-                        Text("Waymark")
-                            .font(Theme.display(20, weight: .semibold))
-                            .foregroundStyle(Theme.ink)
                     }
-                    Text("expedition journal")
-                        .font(Theme.caption)
-                        .foregroundStyle(Theme.inkFaint)
-                        .padding(.leading, 1)
+                    Text("Waymark")
+                        .font(Theme.display(21, weight: .bold))
+                        .foregroundStyle(Theme.ink)
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 26)
-                .padding(.bottom, 28)
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 26)
 
-                // Nav
-                VStack(spacing: 4) {
+                VStack(spacing: 5) {
                     ForEach(Destination.allCases) { dest in
                         NavButton(dest: dest, isSelected: selection == dest) {
                             selection = dest
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
 
                 Spacer()
-
-                // A quiet axis legend grounds the color language.
-                VStack(alignment: .leading, spacing: 9) {
-                    Eyebrow(text: "Axes")
-                        .padding(.leading, 6)
-                    ForEach(StrategicAxis.allCases) { axis in
-                        HStack(spacing: 8) {
-                            Circle().fill(axis.color).frame(width: 7, height: 7)
-                            Text(axis.shortName)
-                                .font(Theme.caption)
-                                .foregroundStyle(Theme.inkSoft)
-                        }
-                        .padding(.leading, 6)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 22)
             }
         }
     }
@@ -119,35 +88,23 @@ private struct NavButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(spacing: 11) {
                 Image(systemName: dest.icon)
-                    .font(.system(size: 15))
-                    .frame(width: 22)
-                    .foregroundStyle(isSelected ? Theme.accent : Theme.inkSoft)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(dest.title)
-                        .font(Theme.bodyMed)
-                        .foregroundStyle(isSelected ? Theme.ink : Theme.inkSoft)
-                    Text(dest.subtitle)
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(Theme.inkFaint)
-                }
+                    .font(.system(size: 14))
+                    .frame(width: 20)
+                    .foregroundStyle(isSelected ? Theme.accent : Theme.inkFaint)
+                Text(dest.title)
+                    .font(Theme.bodyMed)
+                    .foregroundStyle(isSelected ? Theme.ink : Theme.inkSoft)
                 Spacer()
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 9)
+            .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: Theme.cornerS, style: .continuous)
-                    .fill(isSelected ? Theme.surfaceHi : (hovering ? Theme.surface.opacity(0.6) : .clear))
+                    .fill(isSelected ? Theme.surface : (hovering ? Theme.surface.opacity(0.6) : .clear))
+                    .shadow(color: Theme.ink.opacity(isSelected ? 0.06 : 0), radius: 6, y: 2)
             )
-            .overlay(alignment: .leading) {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Theme.accent)
-                        .frame(width: 3, height: 18)
-                        .padding(.leading, 2)
-                }
-            }
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
