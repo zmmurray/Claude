@@ -7,6 +7,7 @@ struct TodayView: View {
     @State private var revealMore = false
     @State private var showExtras = false
     @State private var stepEditor: Quest? = nil
+    @State private var showNewProject = false
 
     private var dateLine: String {
         let f = DateFormatter(); f.dateFormat = "EEEE, MMMM d"
@@ -31,6 +32,7 @@ struct TodayView: View {
         }
         .scrollIndicators(.hidden)
         .sheet(item: $stepEditor) { q in NextStepSheet(quest: q).environmentObject(store) }
+        .sheet(isPresented: $showNewProject) { QuestEditorSheet(existing: nil).environmentObject(store) }
         .animation(.spring(response: 0.5, dampingFraction: 0.85), value: store.hasDoneEnoughToday)
     }
 
@@ -74,17 +76,29 @@ struct TodayView: View {
     @ViewBuilder private var quietState: some View {
         let stuck = store.needsNextStep
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 10) {
-                Image(systemName: "leaf.fill").foregroundStyle(Theme.accent)
-                Text(stuck.isEmpty ? "Nothing's pressing right now." : "A quest is waiting on a next step.")
+            if !store.hasAnyQuests {
+                // No projects yet — the one guided action.
+                Image(systemName: "map.fill").font(.system(size: 26)).foregroundStyle(Theme.accent)
+                Text("Add your first project")
                     .font(Theme.titleM).foregroundStyle(Theme.ink)
-            }
-            if stuck.isEmpty {
-                Text("Enjoy the quiet, or open Quests when you're ready to line up your next move.")
+                Text("A project is a real piece of work under one of your goals — like a film, a client job, or a trip — with one concrete next step. Waymark will then show you what to focus on each day.")
                     .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
-                Button { goToQuests() } label: { Label("Open Quests", systemImage: "map.fill") }
+                Button { showNewProject = true } label: { Label("New project", systemImage: "plus") }
+                    .buttonStyle(PrimaryActionButtonStyle(big: true))
+            } else if stuck.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "leaf.fill").foregroundStyle(Theme.accent)
+                    Text("Nothing's pressing right now.").font(Theme.titleM).foregroundStyle(Theme.ink)
+                }
+                Text("Enjoy the quiet, or open Projects when you're ready to line up your next move.")
+                    .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
+                Button { goToQuests() } label: { Label("Open Projects", systemImage: "map.fill") }
                     .buttonStyle(QuietButtonStyle())
             } else {
+                HStack(spacing: 10) {
+                    Image(systemName: "leaf.fill").foregroundStyle(Theme.accent)
+                    Text("A project is waiting on a next step.").font(Theme.titleM).foregroundStyle(Theme.ink)
+                }
                 Text("Name one small move and it becomes doable.")
                     .font(Theme.body).foregroundStyle(Theme.inkSoft)
                 ForEach(stuck) { q in

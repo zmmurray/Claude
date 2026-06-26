@@ -1,30 +1,24 @@
 import SwiftUI
 
-/// The guided first-run. It explains what Waymark is *for* before it ever asks for
-/// anything, then walks the user through naming their goals and first quest — one
-/// calm screen and one action at a time.
+/// The guided first-run. It explains what Waymark is *for* and the difference between
+/// a goal and a project before asking for anything — then collects just your goals.
+/// You add projects afterward, one at a time, on the Today screen.
 struct OnboardingView: View {
     @EnvironmentObject var store: DataStore
 
-    private enum Step: Int, CaseIterable { case welcome, how, goals, quest }
+    private enum Step: Int, CaseIterable { case welcome, how, goals }
     @State private var step: Step = .welcome
 
-    // Goals step
     @State private var goalDraft = ""
     @State private var goals: [String] = []
-    private let goalExamples = ["My career", "Provide for my family", "A creative project", "Health", "Financial security"]
-
-    // Quest step
-    @State private var questName = ""
-    @State private var questStep = ""
-    @State private var questGoalIndex = 0
+    private let goalExamples = ["Grow my film career", "Provide for my family", "Stay creative", "Get healthy"]
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
             content
                 .frame(maxWidth: 560)
-                .padding(40)
+                .padding(38)
                 .glass(strong: true)
                 .padding(.horizontal, 40)
             Spacer()
@@ -38,11 +32,8 @@ struct OnboardingView: View {
         case .welcome: welcomeStep
         case .how:     howStep
         case .goals:   goalsStep
-        case .quest:   questStep_
         }
     }
-
-    // MARK: Steps
 
     private var welcomeStep: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -50,40 +41,52 @@ struct OnboardingView: View {
                 .font(.system(size: 40)).foregroundStyle(Theme.accent)
             Text("Welcome to Waymark")
                 .font(Theme.titleXL).foregroundStyle(Theme.ink)
-            Text("You're juggling a lot. Waymark cuts through it and shows you the *one* thing worth your focus today — so you make real progress on what matters, and still have a life.")
+            Text("You're juggling a lot. Waymark cuts through it and shows you the one thing worth your focus today — so you make real progress on what matters, and still have a life.")
                 .font(.system(size: 16)).foregroundStyle(Theme.inkSoft).lineSpacing(5)
-            primaryNav("Begin", to: .how)
+            Button("Begin") { step = .how }
+                .buttonStyle(PrimaryActionButtonStyle(big: true)).padding(.top, 6)
         }
     }
 
     private var howStep: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Eyebrow(text: "How it works")
-            Text("Three simple ideas")
+        VStack(alignment: .leading, spacing: 18) {
+            Eyebrow(text: "The idea")
+            Text("Goals hold projects")
                 .font(Theme.titleL).foregroundStyle(Theme.ink)
-            point("mountain.2.fill", "Goals", "The few things you're really working toward — in your words.")
-            point("map.fill", "Quests", "Your projects. Each one serves a goal and has a single next step.")
-            point("sun.horizon.fill", "Today", "Waymark picks what matters most right now — and tells you when you've done enough.")
+            Text("A **goal** is a big thing you're working toward. A **project** is a specific piece of work that moves a goal forward. Each project has one **next step**.")
+                .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
+
+            // A small worked example so the difference is concrete.
+            VStack(alignment: .leading, spacing: 10) {
+                exampleRow("mountain.2.fill", "Goal", "Grow my film career", Theme.accent)
+                indentArrow
+                exampleRow("map.fill", "Project", "Pelagos — short film", Theme.goalColor(0))
+                indentArrow
+                exampleRow("arrow.forward.circle.fill", "Next step", "Render shot 14", Theme.inkSoft)
+            }
+            .padding(16)
+            .background(RoundedRectangle(cornerRadius: Theme.cornerS).fill(Color.white.opacity(0.6)))
+
             HStack {
-                backButton(to: .welcome)
-                primaryNav("Next", to: .goals)
+                Button { step = .welcome } label: { Image(systemName: "chevron.left") }.buttonStyle(QuietButtonStyle())
+                Button("Next") { step = .goals }.buttonStyle(PrimaryActionButtonStyle())
             }
         }
     }
 
     private var goalsStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Eyebrow(text: "Step 1 of 2")
+            Eyebrow(text: "Let's set up")
             Text("What are you working toward?")
                 .font(Theme.titleL).foregroundStyle(Theme.ink)
-            Text("Name a few goals in your own words. They can be about work, money, family, health, or any creative dream — whatever matters to you.")
+            Text("Name a few goals in your own words — the big areas, not specific tasks. You'll add the actual projects next, inside the app.")
                 .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
 
             HStack(spacing: 8) {
-                TextField("e.g. My film work", text: $goalDraft)
+                TextField("e.g. Grow my film career", text: $goalDraft)
                     .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
-                    .padding(11).background(Capsule().fill(.ultraThinMaterial))
-                    .overlay(Capsule().strokeBorder(Color.white.opacity(0.5), lineWidth: 1))
+                    .padding(11).background(RoundedRectangle(cornerRadius: Theme.cornerS).fill(Color.white.opacity(0.85)))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.cornerS).strokeBorder(Theme.hairlineHi, lineWidth: 1))
                     .onSubmit(addGoal)
                 Button(action: addGoal) { Image(systemName: "plus") }
                     .buttonStyle(PrimaryActionButtonStyle())
@@ -91,9 +94,8 @@ struct OnboardingView: View {
             }
 
             if goals.isEmpty {
-                FlowChips(items: goalExamples) { ex in
-                    if !goals.contains(ex) { goals.append(ex) }
-                }
+                Text("Tap to add, or type your own:").font(Theme.caption).foregroundStyle(Theme.inkFaint)
+                FlowChips(items: goalExamples) { ex in if !goals.contains(ex) { goals.append(ex) } }
             } else {
                 FlowChips(items: goals, removable: true, colorForIndex: { Theme.goalColor($0) }) { g in
                     goals.removeAll { $0 == g }
@@ -101,101 +103,42 @@ struct OnboardingView: View {
             }
 
             HStack {
-                backButton(to: .how)
-                Button("Next") { commitGoals(); step = .quest }
+                Button { step = .how } label: { Image(systemName: "chevron.left") }.buttonStyle(QuietButtonStyle())
+                Button("Enter Waymark") { finish() }
                     .buttonStyle(PrimaryActionButtonStyle())
                     .disabled(goals.isEmpty).opacity(goals.isEmpty ? 0.5 : 1)
             }
         }
     }
 
-    private var questStep_: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Eyebrow(text: "Step 2 of 2")
-            Text("Add your first quest")
-                .font(Theme.titleL).foregroundStyle(Theme.ink)
-            Text("Pick a goal, name a project, and — most importantly — one concrete next step you could actually start.")
-                .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
-
-            if !store.goals.isEmpty {
-                FlowChips(items: store.goals.map(\.name),
-                          selectedIndex: questGoalIndex,
-                          colorForIndex: { Theme.goalColor($0) }) { name in
-                    if let i = store.goals.firstIndex(where: { $0.name == name }) { questGoalIndex = i }
-                }
-            }
-            field("Project name", "e.g. Short film — Pelagos", text: $questName)
-            field("First step", "e.g. Render shot 14", text: $questStep)
-
-            HStack {
-                backButton(to: .goals)
-                Button("Skip for now") { finish(addQuest: false) }.buttonStyle(QuietButtonStyle())
-                Button("Enter Waymark") { finish(addQuest: true) }
-                    .buttonStyle(PrimaryActionButtonStyle())
-                    .disabled(questName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .opacity(questName.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 1)
-            }
+    private func exampleRow(_ icon: String, _ label: String, _ text: String, _ color: Color) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon).font(.system(size: 13)).foregroundStyle(color).frame(width: 20)
+            Text(label.uppercased()).font(Theme.eyebrow).tracking(1).foregroundStyle(Theme.inkFaint).frame(width: 74, alignment: .leading)
+            Text(text).font(Theme.bodyMed).foregroundStyle(Theme.ink)
+            Spacer()
         }
     }
-
-    // MARK: Pieces
-
-    private func point(_ icon: String, _ title: String, _ body: String) -> some View {
-        HStack(alignment: .top, spacing: 13) {
-            Image(systemName: icon).font(.system(size: 16)).foregroundStyle(Theme.accent).frame(width: 24)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(Theme.bodyMed).foregroundStyle(Theme.ink)
-                Text(body).font(Theme.caption).foregroundStyle(Theme.inkSoft).lineSpacing(3)
-            }
-        }
-    }
-
-    private func field(_ label: String, _ placeholder: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: label)
-            TextField(placeholder, text: text)
-                .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
-                .padding(11).background(RoundedRectangle(cornerRadius: Theme.cornerS).fill(.ultraThinMaterial))
-                .overlay(RoundedRectangle(cornerRadius: Theme.cornerS).strokeBorder(Color.white.opacity(0.5), lineWidth: 1))
-        }
-    }
-
-    private func primaryNav(_ title: String, to next: Step) -> some View {
-        Button(title) { step = next }.buttonStyle(PrimaryActionButtonStyle(big: true)).padding(.top, 6)
-    }
-    private func backButton(to prev: Step) -> some View {
-        Button { step = prev } label: { Image(systemName: "chevron.left") }.buttonStyle(QuietButtonStyle())
+    private var indentArrow: some View {
+        Image(systemName: "arrow.turn.down.right")
+            .font(.system(size: 10)).foregroundStyle(Theme.inkFaint.opacity(0.6)).padding(.leading, 24)
     }
 
     private var dots: some View {
         HStack(spacing: 7) {
             ForEach(Step.allCases, id: \.rawValue) { s in
-                Circle().fill(s == step ? Theme.accent : Theme.ink.opacity(0.18))
-                    .frame(width: 7, height: 7)
+                Circle().fill(s == step ? Theme.accent : Theme.ink.opacity(0.18)).frame(width: 7, height: 7)
             }
         }
     }
-
-    // MARK: Actions
 
     private func addGoal() {
         let t = goalDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty, !goals.contains(t) else { return }
         goals.append(t); goalDraft = ""
     }
-    private func commitGoals() {
+    private func finish() {
         for g in goals where !store.goals.contains(where: { $0.name == g }) { store.addGoal(named: g) }
-    }
-    private func finish(addQuest: Bool) {
-        commitGoals()
-        if addQuest {
-            let name = questName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !name.isEmpty {
-                let goalID = store.goals.indices.contains(questGoalIndex) ? store.goals[questGoalIndex].id : nil
-                store.upsert(Quest(name: name, goalID: goalID, stage: .active,
-                                   nextStep: questStep.trimmingCharacters(in: .whitespacesAndNewlines)))
-            }
-        }
         withAnimation { store.completeOnboarding() }
     }
 }
@@ -226,7 +169,7 @@ struct FlowChips: View {
                 if removable { Image(systemName: "xmark").font(.system(size: 8)).foregroundStyle(Theme.inkFaint) }
             }
             .padding(.horizontal, 11).padding(.vertical, 7)
-            .background(Capsule().fill(selected ? Theme.accent : Color.white.opacity(0.45)))
+            .background(Capsule().fill(selected ? Theme.accent : Color.white.opacity(0.7)))
             .overlay(Capsule().strokeBorder(selected ? .clear : color.opacity(0.35), lineWidth: 1))
         }
         .buttonStyle(.plain)

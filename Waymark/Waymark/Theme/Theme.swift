@@ -82,30 +82,23 @@ struct CinematicBackground: View {
 
 // MARK: - Frosted glass surfaces
 
-/// A floating frosted-glass panel: translucent material, a luminous top highlight,
-/// a hairline edge, and a soft shadow. The signature surface of the app.
+/// A floating panel. Near-solid and high-contrast so text stays crisp — the
+/// cinematic atmosphere lives in the background, not smeared across the content.
 struct GlassCard: ViewModifier {
     var strong: Bool = false
     var accentEdge: Color? = nil
     func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
-            // Decorative overlays must not intercept clicks meant for the content.
-            .overlay(
+            .background(
                 RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
-                    .fill(
-                        LinearGradient(colors: [Color.white.opacity(strong ? 0.45 : 0.30), Color.white.opacity(0.04)],
-                                       startPoint: .top, endPoint: .bottom)
-                    )
-                    .blendMode(.softLight)
-                    .allowsHitTesting(false)
+                    .fill(Color.white.opacity(strong ? 0.97 : 0.92))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
-                    .strokeBorder(accentEdge ?? Color.white.opacity(0.55), lineWidth: accentEdge == nil ? 1 : 1.6)
+                    .strokeBorder(accentEdge ?? Color.white.opacity(0.9), lineWidth: accentEdge == nil ? 1 : 1.6)
                     .allowsHitTesting(false)
             )
-            .shadow(color: Theme.ink.opacity(strong ? 0.16 : 0.10), radius: strong ? 26 : 16, x: 0, y: strong ? 14 : 8)
+            .shadow(color: Theme.ink.opacity(strong ? 0.18 : 0.12), radius: strong ? 24 : 14, x: 0, y: strong ? 12 : 7)
     }
 }
 

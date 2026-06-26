@@ -37,7 +37,7 @@ struct QuestEditorSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(existing == nil ? "New Quest" : "Edit Quest").font(Theme.titleM).foregroundStyle(Theme.ink)
+                Text(existing == nil ? "New Project" : "Edit Project").font(Theme.titleM).foregroundStyle(Theme.ink)
                 Spacer()
                 if existing != nil {
                     Button(role: .destructive) { showDeleteConfirm = true } label: {
@@ -50,7 +50,7 @@ struct QuestEditorSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    field("Quest name") {
+                    field("Project name") {
                         TextField("e.g. Short film — Pelagos", text: $name)
                             .textFieldStyle(.plain).font(Theme.titleM).foregroundStyle(Theme.ink)
                     }
@@ -68,7 +68,7 @@ struct QuestEditorSheet: View {
 
                     if showMore {
                         field("Deadline") { deadlinePicker }
-                        field("Stage", hint: "Where this quest is along its journey.") { stagePicker }
+                        field("Stage", hint: "Where this project is along its journey.") { stagePicker }
                         field("Notes", hint: "Optional.") {
                             TextEditor(text: $notes).font(Theme.body).foregroundStyle(Theme.ink)
                                 .scrollContentBackground(.hidden).frame(minHeight: 54)
@@ -88,14 +88,14 @@ struct QuestEditorSheet: View {
             HStack(spacing: 12) {
                 Spacer()
                 Button("Cancel") { dismiss() }.buttonStyle(QuietButtonStyle())
-                Button(existing == nil ? "Add quest" : "Save") { save() }
+                Button(existing == nil ? "Add project" : "Save") { save() }
                     .buttonStyle(PrimaryActionButtonStyle()).disabled(!canSave).opacity(canSave ? 1 : 0.5)
             }
             .padding(.horizontal, 22).padding(.vertical, 16)
         }
         .frame(width: 540, height: 640)
         .background(LinearGradient(colors: [Theme.skyTop, Theme.skyMid], startPoint: .top, endPoint: .bottom))
-        .confirmationDialog("Delete this quest?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .confirmationDialog("Delete this project?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { if let existing { store.delete(existing); dismiss() } }
             Button("Cancel", role: .cancel) {}
         }

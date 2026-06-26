@@ -67,7 +67,7 @@ struct GoalCard: View {
                 Text("\(milestones) milestone\(milestones == 1 ? "" : "s")")
                     .font(Theme.caption).foregroundStyle(Theme.inkFaint)
                 Spacer()
-                Text("\(activeCount) active quest\(activeCount == 1 ? "" : "s")")
+                Text("\(activeCount) active project\(activeCount == 1 ? "" : "s")")
                     .font(Theme.caption).foregroundStyle(Theme.inkFaint)
             }
 

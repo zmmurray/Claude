@@ -3,6 +3,7 @@ import SwiftUI
 struct GoalsView: View {
     @EnvironmentObject var store: DataStore
     @State private var newGoal = ""
+    @State private var showResetConfirm = false
 
     var body: some View {
         ScrollView {
@@ -60,9 +61,24 @@ struct GoalsView: View {
                     Text("Replay intro").font(Theme.caption).foregroundStyle(Theme.inkFaint).underline()
                 }.buttonStyle(.plain)
             }
+            Divider().overlay(Color.white.opacity(0.5)).padding(.vertical, 2)
+            HStack {
+                Text("Clear all goals, projects, and history and start fresh.")
+                    .font(Theme.caption).foregroundStyle(Theme.inkFaint)
+                Spacer()
+                Button(role: .destructive) { showResetConfirm = true } label: {
+                    Label("Start over", systemImage: "trash")
+                }.buttonStyle(QuietButtonStyle())
+            }
         }
         .padding(20).frame(maxWidth: .infinity, alignment: .leading).glass()
         .padding(.top, 8)
+        .confirmationDialog("Clear everything and start over?", isPresented: $showResetConfirm, titleVisibility: .visible) {
+            Button("Clear everything", role: .destructive) { withAnimation { store.resetAll() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes all goals, projects, and progress on this Mac. Your background image is kept.")
+        }
     }
 
     private func addGoal() {

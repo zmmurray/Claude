@@ -55,9 +55,9 @@ struct QuestsView: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text("Quests").font(Theme.titleXL).foregroundStyle(Theme.ink)
+            Text("Projects").font(Theme.titleXL).foregroundStyle(Theme.ink)
             Spacer()
-            Button { editing = .new } label: { Label("New quest", systemImage: "plus") }
+            Button { editing = .new } label: { Label("New project", systemImage: "plus") }
                 .buttonStyle(PrimaryActionButtonStyle())
         }
     }
@@ -75,10 +75,10 @@ struct QuestsView: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("No quests yet.").font(Theme.titleM).foregroundStyle(Theme.ink)
-            Text("Add your first project. All it really needs is a name and one concrete next step.")
+            Text("No projects yet.").font(Theme.titleM).foregroundStyle(Theme.ink)
+            Text("A project is a piece of work under one of your goals. All it really needs is a name and one concrete next step.")
                 .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
-            Button { editing = .new } label: { Label("New quest", systemImage: "plus") }
+            Button { editing = .new } label: { Label("New project", systemImage: "plus") }
                 .buttonStyle(PrimaryActionButtonStyle())
         }
         .padding(24).glass()

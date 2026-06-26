@@ -56,7 +56,7 @@ struct QuestRow: View {
                     .buttonStyle(.plain).foregroundStyle(Theme.inkSoft).help("Move to \(next.title)")
             }
             Button(action: onEdit) { Image(systemName: "pencil").font(.system(size: 11, weight: .semibold)) }
-                .buttonStyle(.plain).foregroundStyle(Theme.inkSoft).help("Edit quest")
+                .buttonStyle(.plain).foregroundStyle(Theme.inkSoft).help("Edit project")
         }
     }
 }

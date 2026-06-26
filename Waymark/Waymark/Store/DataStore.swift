@@ -195,6 +195,13 @@ final class DataStore: ObservableObject {
     func declareEnoughForToday() { data.enoughDate = Date(); save() }
     func reopenToday() { if hasDoneEnoughToday { data.enoughDate = nil; save() } }
 
+    /// Wipe everything and re-run the intro — a clean slate (keeps the chosen backdrop).
+    func resetAll() {
+        let bg = data.backgroundImageName
+        data = AppData(backgroundImageName: bg)
+        save()
+    }
+
     // MARK: Background image
 
     var backgroundImage: NSImage? {

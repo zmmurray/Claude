@@ -6,7 +6,7 @@ enum Destination: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .today: return "Today"
-        case .quests: return "Quests"
+        case .quests: return "Projects"
         case .goals: return "Goals"
         }
     }
