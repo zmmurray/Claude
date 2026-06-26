@@ -1,35 +1,27 @@
 import SwiftUI
 
-/// Add or edit a quest. Short and friendly: name, first step, and which goal it serves
-/// are what matter; the rest is optional.
+/// Add or edit a quest's details. Tasks are managed on the quest card itself.
 struct QuestEditorSheet: View {
     @EnvironmentObject var store: DataStore
     @Environment(\.dismiss) private var dismiss
     let existing: Quest?
 
     @State private var name: String
-    @State private var nextStep: String
-    @State private var goalID: UUID?
+    @State private var firstTask: String
     @State private var importance: Int
     @State private var deadlineType: DeadlineType
     @State private var deadlineDate: Date
-    @State private var stage: Stage
     @State private var notes: String
-    @State private var showMore: Bool
     @State private var showDeleteConfirm = false
 
     init(existing: Quest?) {
         self.existing = existing
-        let q = existing
-        _name = State(initialValue: q?.name ?? "")
-        _nextStep = State(initialValue: q?.nextStep ?? "")
-        _goalID = State(initialValue: q?.goalID)
-        _importance = State(initialValue: q?.importance ?? 3)
-        _deadlineType = State(initialValue: q?.deadline.type ?? .none)
-        _deadlineDate = State(initialValue: q?.deadline.date ?? Date().addingTimeInterval(60*60*24*7))
-        _stage = State(initialValue: q?.stage ?? .idea)
-        _notes = State(initialValue: q?.notes ?? "")
-        _showMore = State(initialValue: q != nil)
+        _name = State(initialValue: existing?.name ?? "")
+        _firstTask = State(initialValue: "")
+        _importance = State(initialValue: existing?.importance ?? 3)
+        _deadlineType = State(initialValue: existing?.deadline.type ?? .none)
+        _deadlineDate = State(initialValue: existing?.deadline.date ?? Date().addingTimeInterval(60*60*24*7))
+        _notes = State(initialValue: existing?.notes ?? "")
     }
 
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -37,7 +29,7 @@ struct QuestEditorSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text(existing == nil ? "New Project" : "Edit Project").font(Theme.titleM).foregroundStyle(Theme.ink)
+                Text(existing == nil ? "New Quest" : "Edit Quest").font(Theme.titleM).foregroundStyle(Theme.ink)
                 Spacer()
                 if existing != nil {
                     Button(role: .destructive) { showDeleteConfirm = true } label: {
@@ -50,34 +42,21 @@ struct QuestEditorSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    field("Project name") {
-                        TextField("e.g. Short film — Pelagos", text: $name)
+                    field("Quest name") {
+                        TextField("e.g. Pelagos — short film", text: $name)
                             .textFieldStyle(.plain).font(Theme.titleM).foregroundStyle(Theme.ink)
                     }
-                    field("First step", hint: "The one move you could start now. This is what Waymark shows you.") {
-                        TextField("e.g. Render shot 14", text: $nextStep)
-                            .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
-                    }
-                    if !store.goals.isEmpty {
-                        VStack(alignment: .leading, spacing: 7) {
-                            Eyebrow(text: "Which goal does it serve?")
-                            goalPicker
+                    if existing == nil {
+                        field("First task", hint: "Optional — you can add more on the card.") {
+                            TextField("e.g. Render shot 14", text: $firstTask)
+                                .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
                         }
                     }
                     field("How important is it?") { importancePicker }
-
-                    if showMore {
-                        field("Deadline") { deadlinePicker }
-                        field("Stage", hint: "Where this project is along its journey.") { stagePicker }
-                        field("Notes", hint: "Optional.") {
-                            TextEditor(text: $notes).font(Theme.body).foregroundStyle(Theme.ink)
-                                .scrollContentBackground(.hidden).frame(minHeight: 54)
-                        }
-                    } else {
-                        Button { withAnimation { showMore = true } } label: {
-                            Label("Add deadline, stage, notes", systemImage: "plus.circle")
-                                .font(Theme.bodyMed).foregroundStyle(Theme.accent)
-                        }.buttonStyle(.plain)
+                    field("Deadline") { deadlinePicker }
+                    field("Notes", hint: "Optional.") {
+                        TextEditor(text: $notes).font(Theme.body).foregroundStyle(Theme.ink)
+                            .scrollContentBackground(.hidden).frame(minHeight: 54)
                     }
                 }
                 .padding(22)
@@ -88,14 +67,14 @@ struct QuestEditorSheet: View {
             HStack(spacing: 12) {
                 Spacer()
                 Button("Cancel") { dismiss() }.buttonStyle(QuietButtonStyle())
-                Button(existing == nil ? "Add project" : "Save") { save() }
+                Button(existing == nil ? "Add quest" : "Save") { save() }
                     .buttonStyle(PrimaryActionButtonStyle()).disabled(!canSave).opacity(canSave ? 1 : 0.5)
             }
             .padding(.horizontal, 22).padding(.vertical, 16)
         }
-        .frame(width: 540, height: 640)
+        .frame(width: 520, height: 560)
         .background(LinearGradient(colors: [Theme.skyTop, Theme.skyMid], startPoint: .top, endPoint: .bottom))
-        .confirmationDialog("Delete this project?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
+        .confirmationDialog("Delete this quest?", isPresented: $showDeleteConfirm, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { if let existing { store.delete(existing); dismiss() } }
             Button("Cancel", role: .cancel) {}
         }
@@ -109,33 +88,11 @@ struct QuestEditorSheet: View {
         }
     }
 
-    private var goalPicker: some View {
-        WrapLayout(spacing: 8) {
-            chip("None", color: Theme.inkFaint, selected: goalID == nil) { goalID = nil }
-            ForEach(store.goals) { g in
-                chip(g.name, color: g.color, selected: goalID == g.id) { goalID = g.id }
-            }
-        }
-    }
-
-    private func chip(_ label: String, color: Color, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Circle().fill(color).frame(width: 7, height: 7)
-                Text(label).font(Theme.caption).foregroundStyle(selected ? .white : Theme.inkSoft)
-            }
-            .padding(.horizontal, 11).padding(.vertical, 7)
-            .background(Capsule().fill(selected ? color : Color.white.opacity(0.5)))
-            .overlay(Capsule().strokeBorder(selected ? .clear : color.opacity(0.35), lineWidth: 1))
-        }.buttonStyle(.plain)
-    }
-
     private var importancePicker: some View {
         HStack(spacing: 8) {
             ForEach(1...5, id: \.self) { i in
                 Button { importance = i } label: {
-                    Image(systemName: i <= importance ? "leaf.fill" : "leaf")
-                        .font(.system(size: 18))
+                    Image(systemName: i <= importance ? "leaf.fill" : "leaf").font(.system(size: 18))
                         .foregroundStyle(i <= importance ? Theme.accent : Theme.inkFaint.opacity(0.45))
                 }.buttonStyle(.plain)
             }
@@ -147,24 +104,9 @@ struct QuestEditorSheet: View {
         switch importance { case 5: return "Essential"; case 4: return "High"; case 3: return "Matters"; case 2: return "Minor"; default: return "Someday" }
     }
 
-    private var stagePicker: some View {
-        WrapLayout(spacing: 6) {
-            ForEach(Stage.allCases) { s in
-                let selected = s == stage
-                Button { stage = s } label: {
-                    Text(s.title).font(Theme.caption).foregroundStyle(selected ? .white : Theme.inkSoft)
-                        .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Capsule().fill(selected ? Theme.accent : Color.white.opacity(0.5)))
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-
     private var deadlinePicker: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                dChip("No deadline", .none); dChip("Target date", .soft); dChip("Hard deadline", .hard)
-            }
+            HStack(spacing: 8) { dChip("No deadline", .none); dChip("Target date", .soft); dChip("Hard deadline", .hard) }
             if deadlineType != .none {
                 DatePicker("", selection: $deadlineDate, displayedComponents: .date)
                     .datePickerStyle(.field).labelsHidden().tint(Theme.accent)
@@ -176,7 +118,7 @@ struct QuestEditorSheet: View {
         return Button { deadlineType = t } label: {
             Text(label).font(Theme.caption).foregroundStyle(selected ? .white : Theme.inkSoft)
                 .padding(.horizontal, 11).padding(.vertical, 6)
-                .background(Capsule().fill(selected ? Theme.accent : Color.white.opacity(0.5)))
+                .background(Capsule().fill(selected ? Theme.accent : Color.white.opacity(0.6)))
         }.buttonStyle(.plain)
     }
 
@@ -186,44 +128,14 @@ struct QuestEditorSheet: View {
         let deadline = Deadline(type: deadlineType, date: deadlineType == .none ? nil : deadlineDate)
         var quest = existing ?? Quest(name: trimmed)
         quest.name = trimmed
-        quest.goalID = goalID
         quest.importance = importance
         quest.deadline = deadline
-        quest.stage = stage
-        quest.nextStep = nextStep.trimmingCharacters(in: .whitespacesAndNewlines)
         quest.notes = notes
+        if existing == nil {
+            let t = firstTask.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty { quest.tasks.append(TaskItem(title: t)) }
+        }
         store.upsert(quest)
         dismiss()
-    }
-}
-
-/// A focused little sheet just for naming a missing next step.
-struct NextStepSheet: View {
-    @EnvironmentObject var store: DataStore
-    @Environment(\.dismiss) private var dismiss
-    let quest: Quest
-    @State private var text: String = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(quest.name).font(Theme.titleM).foregroundStyle(Theme.ink)
-            Text("What's one small move you could actually start?")
-                .font(Theme.body).foregroundStyle(Theme.inkSoft)
-            TextField("e.g. Sketch the opening shot list", text: $text)
-                .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
-                .padding(12).glass()
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }.buttonStyle(QuietButtonStyle())
-                Button("Set step") {
-                    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !t.isEmpty { store.setNextStep(t, for: quest) }
-                    dismiss()
-                }.buttonStyle(PrimaryActionButtonStyle())
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(22).frame(width: 440)
-        .background(LinearGradient(colors: [Theme.skyTop, Theme.skyMid], startPoint: .top, endPoint: .bottom))
     }
 }

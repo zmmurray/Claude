@@ -8,11 +8,9 @@ struct EnoughView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 14) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 36)).foregroundStyle(Theme.accent)
-                Text("That's enough for today.")
-                    .font(Theme.titleL).foregroundStyle(Theme.ink)
-                Text("You moved what mattered. The rest can wait — go live your life. Resting now is a way of winning the day, not skipping it.")
+                Image(systemName: "checkmark.seal.fill").font(.system(size: 36)).foregroundStyle(Theme.accent)
+                Text("That's enough for today.").font(Theme.titleL).foregroundStyle(Theme.ink)
+                Text("You did what mattered. The rest can wait — go live your life. Resting now is a way of winning the day, not skipping it.")
                     .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(4)
                     .frame(maxWidth: 520, alignment: .leading)
             }
@@ -21,10 +19,10 @@ struct EnoughView: View {
 
             if !store.todaysProgress.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Eyebrow(text: "Moved today")
+                    Eyebrow(text: "Done today")
                     ForEach(store.todaysProgress) { ev in
                         HStack(spacing: 10) {
-                            Image(systemName: ev.kind == .advancedStage ? "arrow.forward.circle.fill" : "checkmark.circle.fill")
+                            Image(systemName: ev.kind == .completedQuest ? "flag.checkered" : "checkmark.circle.fill")
                                 .foregroundStyle(Theme.accent)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(ev.detail).font(Theme.bodyMed).foregroundStyle(Theme.ink)
@@ -37,7 +35,7 @@ struct EnoughView: View {
             }
 
             if revealMore {
-                if store.hasActionableQuests {
+                if store.hasActionable {
                     Button { withAnimation { store.reopenToday() } } label: {
                         Label("Reopen today's focus", systemImage: "arrow.uturn.backward")
                     }.buttonStyle(QuietButtonStyle())

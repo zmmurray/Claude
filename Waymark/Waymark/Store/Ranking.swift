@@ -1,43 +1,34 @@
 import Foundation
 
-/// One quest, scored for today, with a plain-sentence reason you can trust.
-struct RankedQuest: Identifiable {
+/// A task chosen for today, with the quest it belongs to and a plain-sentence reason.
+struct RankedTask: Identifiable {
     let quest: Quest
-    let score: Double
+    let task: TaskItem
     let reason: String
-    var id: UUID { quest.id }
+    var id: UUID { task.id }
 }
 
-/// The ranking engine. It blends deadline *urgency* with *importance* — never task
-/// count, never "what's quickest to clear." It returns a SHORT list on purpose:
-/// overwhelm is failure.
+/// Decides which tasks deserve today by blending each quest's **importance** with its
+/// **deadline urgency**. Never by task count. Returns a SHORT list on purpose.
 enum Ranking {
-
     private static let importanceInfluence: Double = 0.58
     private static let urgencyInfluence: Double = 0.42
     private static let horizonDays: Double = 30
 
-    /// 0...1 from the 1–5 importance.
     static func importanceScore(_ importance: Int) -> Double {
         Double(min(5, max(1, importance)) - 1) / 4.0
     }
 
-    /// 0...~1.2 urgency. Hard deadlines weigh full; soft, half; none, almost nothing.
     static func urgencyScore(_ deadline: Deadline, now: Date = Date()) -> Double {
-        let typeMultiplier: Double
+        let mult: Double
         switch deadline.type {
-        case .hard: typeMultiplier = 1.0
-        case .soft: typeMultiplier = 0.5
+        case .hard: mult = 1.0
+        case .soft: mult = 0.5
         case .none: return 0.04
         }
-        guard let days = deadline.daysFromNow(now) else {
-            return 0.30 * typeMultiplier
-        }
-        if days < 0 {
-            return (1.0 + min(0.2, Double(-days) / 100.0)) * typeMultiplier
-        }
-        let closeness = max(0, 1 - Double(days) / horizonDays)
-        return closeness * typeMultiplier
+        guard let days = deadline.daysFromNow(now) else { return 0.30 * mult }
+        if days < 0 { return (1.0 + min(0.2, Double(-days) / 100.0)) * mult }
+        return max(0, 1 - Double(days) / horizonDays) * mult
     }
 
     static func score(_ quest: Quest, now: Date = Date()) -> Double {
@@ -45,62 +36,50 @@ enum Ranking {
             + urgencyInfluence * urgencyScore(quest.deadline, now: now)
     }
 
-    /// A single trustworthy sentence explaining the rank.
     static func reason(for quest: Quest, now: Date = Date()) -> String {
         var parts: [String] = []
-
         if quest.deadline.type != .none {
             let kind = quest.deadline.type == .hard ? "Hard" : "Soft"
             if let days = quest.deadline.daysFromNow(now) {
-                if days < 0 {
-                    parts.append("\(kind) deadline \(abs(days))d overdue")
-                } else if days == 0 {
-                    parts.append("\(kind) deadline today")
-                } else if days == 1 {
-                    parts.append("\(kind) deadline tomorrow")
-                } else {
-                    parts.append("\(kind) deadline in \(days) days")
-                }
-            } else {
-                parts.append("\(kind) deadline set")
-            }
+                if days < 0 { parts.append("\(kind) deadline \(abs(days))d overdue") }
+                else if days == 0 { parts.append("\(kind) deadline today") }
+                else if days == 1 { parts.append("\(kind) deadline tomorrow") }
+                else { parts.append("\(kind) deadline in \(days) days") }
+            } else { parts.append("\(kind) deadline set") }
         }
-
         switch quest.importance {
         case 5: parts.append("very important to you")
         case 4: parts.append("important to you")
         case 3: parts.append("matters to you")
         default: break
         }
-
-        if parts.isEmpty {
-            return "Quietly worth a little attention today."
-        }
-        let sentence = parts.joined(separator: " + ")
-        return sentence.prefix(1).uppercased() + sentence.dropFirst() + "."
+        if parts.isEmpty { return "Quietly worth a little attention today." }
+        let s = parts.joined(separator: " + ")
+        return s.prefix(1).uppercased() + s.dropFirst() + "."
     }
 
-    /// Today's focus: the few quests that deserve the day. Always the single most
-    /// important actionable quest; runners-up only if genuinely comparable, capped low.
-    static func todaysFocus(_ quests: [Quest], now: Date = Date(), maxItems: Int = 3) -> [RankedQuest] {
+    /// Today's tasks: the next task from each actionable quest, ranked, kept short.
+    static func todaysTasks(_ quests: [Quest], now: Date = Date(), maxItems: Int = 3) -> [RankedTask] {
         let ranked = quests
             .filter { $0.isActionable }
-            .map { RankedQuest(quest: $0, score: score($0, now: now), reason: reason(for: $0, now: now)) }
-            .sorted { $0.score > $1.score }
+            .compactMap { q -> (Quest, TaskItem, Double)? in
+                guard let t = q.nextTask else { return nil }
+                return (q, t, score(q, now: now))
+            }
+            .sorted { $0.2 > $1.2 }
 
         guard let leader = ranked.first else { return [] }
-        let cutoff = leader.score * 0.62
-        var result = [leader]
-        for item in ranked.dropFirst() where result.count < maxItems && item.score >= cutoff {
-            result.append(item)
+        let cutoff = leader.2 * 0.62
+        var out = [RankedTask(quest: leader.0, task: leader.1, reason: reason(for: leader.0, now: now))]
+        for item in ranked.dropFirst() where out.count < maxItems && item.2 >= cutoff {
+            out.append(RankedTask(quest: item.0, task: item.1, reason: reason(for: item.0, now: now)))
         }
-        return result
+        return out
     }
 
-    /// Important quests stuck because they lack a concrete next step.
-    static func needsNextStep(_ quests: [Quest]) -> [Quest] {
-        quests
-            .filter { !$0.isDone && !$0.hasNextStep && $0.importance >= 4 }
+    /// Important quests that have no open tasks (so nothing can be surfaced).
+    static func needsTask(_ quests: [Quest]) -> [Quest] {
+        quests.filter { !$0.isDone && !$0.hasOpenTasks && $0.importance >= 4 }
             .sorted { $0.importance > $1.importance }
     }
 }

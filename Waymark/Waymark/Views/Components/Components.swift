@@ -10,16 +10,11 @@ struct AppBackdrop: View {
         ZStack {
             if let img = store.backgroundImage {
                 Image(nsImage: img)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .overlay(
-                        LinearGradient(colors: [Color.white.opacity(0.52), Color.white.opacity(0.34)],
-                                       startPoint: .top, endPoint: .bottom)
-                    )
-                    .overlay(
-                        RadialGradient(colors: [.clear, Theme.ink.opacity(0.14)],
-                                       center: .center, startRadius: 280, endRadius: 820)
-                    )
+                    .resizable().aspectRatio(contentMode: .fill)
+                    .overlay(LinearGradient(colors: [Color.white.opacity(0.52), Color.white.opacity(0.34)],
+                                            startPoint: .top, endPoint: .bottom))
+                    .overlay(RadialGradient(colors: [.clear, Theme.ink.opacity(0.14)],
+                                            center: .center, startRadius: 280, endRadius: 820))
                     .clipped()
             } else {
                 CinematicBackground()
@@ -29,7 +24,6 @@ struct AppBackdrop: View {
     }
 }
 
-/// Lets the user pick an image file for the backdrop. Returns the chosen URL.
 @MainActor
 func pickBackgroundImage() -> URL? {
     let panel = NSOpenPanel()
@@ -38,35 +32,6 @@ func pickBackgroundImage() -> URL? {
     panel.allowsMultipleSelection = false
     panel.canChooseDirectories = false
     return panel.runModal() == .OK ? panel.url : nil
-}
-
-/// A quiet color-dot + name tag for a goal.
-struct GoalChip: View {
-    let goal: Goal
-    var body: some View {
-        HStack(spacing: 6) {
-            Circle().fill(goal.color).frame(width: 7, height: 7)
-            Text(goal.name).font(Theme.caption).foregroundStyle(Theme.inkSoft).lineLimit(1)
-        }
-        .padding(.horizontal, 9).padding(.vertical, 4)
-        .background(Capsule().fill(goal.color.opacity(0.14)))
-        .overlay(Capsule().strokeBorder(goal.color.opacity(0.30), lineWidth: 1))
-    }
-}
-
-/// The quest's arc as a short row of dots.
-struct StageIndicator: View {
-    let stage: Stage
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Stage.allCases) { s in
-                Circle()
-                    .fill(s.order <= stage.order ? Theme.accent.opacity(s == .done ? 1 : 0.8) : Theme.inkFaint.opacity(0.30))
-                    .frame(width: 6, height: 6)
-            }
-            Text(stage.title).font(Theme.caption).foregroundStyle(Theme.inkSoft).padding(.leading, 4)
-        }
-    }
 }
 
 /// Importance shown as little leaves.
@@ -119,7 +84,6 @@ struct DeadlinePill: View {
     }
 }
 
-/// The warm, weighty primary action — forest green, white text.
 struct PrimaryActionButtonStyle: ButtonStyle {
     var big: Bool = false
     func makeBody(configuration: Configuration) -> some View {
@@ -127,10 +91,8 @@ struct PrimaryActionButtonStyle: ButtonStyle {
             .font(big ? Theme.display(16, weight: .semibold) : Theme.bodyMed)
             .foregroundStyle(.white)
             .padding(.horizontal, big ? 26 : 18).padding(.vertical, big ? 14 : 10)
-            .background(
-                Capsule().fill(LinearGradient(colors: [Theme.accent, Theme.accentDeep],
-                                              startPoint: .top, endPoint: .bottom))
-            )
+            .background(Capsule().fill(LinearGradient(colors: [Theme.accent, Theme.accentDeep],
+                                                      startPoint: .top, endPoint: .bottom)))
             .shadow(color: Theme.accent.opacity(configuration.isPressed ? 0.12 : 0.32),
                     radius: configuration.isPressed ? 5 : 14, x: 0, y: 6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
@@ -138,7 +100,6 @@ struct PrimaryActionButtonStyle: ButtonStyle {
     }
 }
 
-/// A quiet, glassy secondary button.
 struct QuietButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label

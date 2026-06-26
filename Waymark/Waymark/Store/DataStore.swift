@@ -14,8 +14,6 @@ final class DataStore: ObservableObject {
     private let decoder: JSONDecoder
     private var bgCache: NSImage?
 
-    // MARK: Lifecycle
-
     init(fileURL: URL? = nil) {
         let enc = JSONEncoder()
         enc.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -28,7 +26,14 @@ final class DataStore: ObservableObject {
         let url = fileURL ?? DataStore.defaultFileURL()
         self.fileURL = url
         self.dir = url.deletingLastPathComponent()
-        self.data = DataStore.load(from: url, decoder: dec)
+        var loaded = DataStore.load(from: url, decoder: dec)
+        // One-time clean slate for data from earlier builds (clears stale demo data
+        // and re-runs the intro). The chosen background is preserved.
+        if loaded.schemaVersion < AppData.currentSchemaVersion {
+            loaded = AppData(backgroundImageName: loaded.backgroundImageName)
+        }
+        self.data = loaded
+        save()
     }
 
     static func defaultFileURL() -> URL {
@@ -52,10 +57,8 @@ final class DataStore: ObservableObject {
     }
 
     private func save() {
-        do {
-            let bytes = try encoder.encode(data)
-            try bytes.write(to: fileURL, options: [.atomic])
-        } catch {
+        do { try encoder.encode(data).write(to: fileURL, options: [.atomic]) }
+        catch {
             #if DEBUG
             print("Waymark save failed: \(error)")
             #endif
@@ -63,58 +66,22 @@ final class DataStore: ObservableObject {
     }
 
     // MARK: Onboarding
-
     var onboardingComplete: Bool { data.onboardingComplete }
     func completeOnboarding() { data.onboardingComplete = true; save() }
     func restartOnboarding() { data.onboardingComplete = false; save() }
 
-    // MARK: Goals
-
-    var goals: [Goal] { data.goals }
-
-    func addGoal(named name: String) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        let idx = data.goals.count % Theme.goalPalette.count
-        data.goals.append(Goal(name: trimmed, colorIndex: idx))
-        save()
-    }
-    func renameGoal(_ goal: Goal, to name: String) {
-        guard let i = data.goals.firstIndex(where: { $0.id == goal.id }) else { return }
-        data.goals[i].name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        save()
-    }
-    func deleteGoal(_ goal: Goal) {
-        data.goals.removeAll { $0.id == goal.id }
-        for i in data.quests.indices where data.quests[i].goalID == goal.id {
-            data.quests[i].goalID = nil
-        }
-        save()
-    }
-    func goal(_ id: UUID?) -> Goal? {
-        guard let id else { return nil }
-        return data.goals.first { $0.id == id }
-    }
-
     // MARK: Quests
-
     var quests: [Quest] { data.quests }
     var activeQuests: [Quest] { data.quests.filter { !$0.isDone }.sorted { Ranking.score($0) > Ranking.score($1) } }
     var doneQuests: [Quest] { data.quests.filter { $0.isDone }.sorted { $0.createdAt > $1.createdAt } }
-
-    func quests(forGoal id: UUID?) -> [Quest] {
-        activeQuests.filter { $0.goalID == id }
-    }
-
-    var todaysFocus: [RankedQuest] { Ranking.todaysFocus(data.quests) }
-    var leadFocus: RankedQuest? { todaysFocus.first }
-    var extraFocus: [RankedQuest] { Array(todaysFocus.dropFirst()) }
-    var needsNextStep: [Quest] { Ranking.needsNextStep(data.quests) }
-
     var hasAnyQuests: Bool { !data.quests.isEmpty }
-    var hasActionableQuests: Bool { data.quests.contains { $0.isActionable } }
 
-    // MARK: Enough state
+    // MARK: Today
+    var todaysTasks: [RankedTask] { Ranking.todaysTasks(data.quests) }
+    var leadTask: RankedTask? { todaysTasks.first }
+    var extraTasks: [RankedTask] { Array(todaysTasks.dropFirst()) }
+    var needsTask: [Quest] { Ranking.needsTask(data.quests) }
+    var hasActionable: Bool { data.quests.contains { $0.isActionable } }
 
     var hasDoneEnoughToday: Bool {
         guard let d = data.enoughDate else { return false }
@@ -123,37 +90,13 @@ final class DataStore: ObservableObject {
     var todaysProgress: [ProgressEvent] {
         data.events.filter { Calendar.current.isDateInToday($0.date) }.sorted { $0.date > $1.date }
     }
-
-    // MARK: Per-goal long-game progress
-
-    /// Total meaningful milestones recorded for a goal.
-    func milestones(forGoal id: UUID) -> Int {
-        data.events.filter { $0.goalID == id }.count
-    }
-    func lastProgress(forGoal id: UUID) -> Date? {
-        data.events.filter { $0.goalID == id }.map(\.date).max()
-    }
-    /// Days since this goal last saw progress (nil if never).
-    func daysSinceProgress(forGoal id: UUID) -> Int? {
-        guard let last = lastProgress(forGoal: id) else { return nil }
-        let cal = Calendar.current
-        return cal.dateComponents([.day], from: cal.startOfDay(for: last), to: cal.startOfDay(for: Date())).day
-    }
-    /// A goal with quests but no progress in two weeks is being neglected.
-    func isNeglected(_ goal: Goal) -> Bool {
-        guard quests(forGoal: goal.id).contains(where: { !$0.isDone }) else { return false }
-        if let days = daysSinceProgress(forGoal: goal.id) { return days >= 14 }
-        return milestones(forGoal: goal.id) == 0
-    }
-
     var weeklyProgressCount: Int {
         let cal = Calendar.current
         guard let weekAgo = cal.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
         return data.events.filter { $0.date >= weekAgo }.count
     }
 
-    // MARK: Mutations
-
+    // MARK: Quest mutations
     func upsert(_ quest: Quest) {
         if let i = data.quests.firstIndex(where: { $0.id == quest.id }) { data.quests[i] = quest }
         else { data.quests.append(quest) }
@@ -161,49 +104,81 @@ final class DataStore: ObservableObject {
     }
     func delete(_ quest: Quest) { data.quests.removeAll { $0.id == quest.id }; save() }
 
-    func completeNextStep(_ quest: Quest) {
+    func markQuestDone(_ quest: Quest) {
         guard let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
-        let isLeader = leadFocus?.id == quest.id
-        let detail = data.quests[i].nextStep.trimmingCharacters(in: .whitespacesAndNewlines)
-        data.events.append(ProgressEvent(
-            questID: quest.id, goalID: data.quests[i].goalID, kind: .completedStep,
-            detail: detail.isEmpty ? "Completed a step" : detail, questName: data.quests[i].name))
-        data.quests[i].nextStep = ""
+        data.quests[i].isDone = true
+        data.events.append(ProgressEvent(questID: quest.id, kind: .completedQuest,
+                                         detail: "Completed", questName: data.quests[i].name))
+        save()
+    }
+    func reopenQuest(_ quest: Quest) {
+        guard let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
+        data.quests[i].isDone = false; save()
+    }
+
+    // MARK: Task mutations
+    func addTask(_ title: String, to quest: Quest) {
+        let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !t.isEmpty, let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
+        data.quests[i].tasks.append(TaskItem(title: t)); save()
+    }
+
+    /// Complete a task. Logs progress; if it was today's leading task, the day is "enough."
+    func completeTask(_ task: TaskItem, in quest: Quest) {
+        guard let qi = data.quests.firstIndex(where: { $0.id == quest.id }),
+              let ti = data.quests[qi].tasks.firstIndex(where: { $0.id == task.id }) else { return }
+        let isLeader = leadTask?.id == task.id
+        data.quests[qi].tasks[ti].done = true
+        data.quests[qi].tasks[ti].completedAt = Date()
+        data.events.append(ProgressEvent(questID: quest.id, kind: .completedTask,
+                                         detail: data.quests[qi].tasks[ti].title, questName: data.quests[qi].name))
         if isLeader { data.enoughDate = Date() }
         save()
     }
-
-    func setNextStep(_ text: String, for quest: Quest) {
-        guard let i = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
-        data.quests[i].nextStep = text
+    func uncompleteTask(_ task: TaskItem, in quest: Quest) {
+        guard let qi = data.quests.firstIndex(where: { $0.id == quest.id }),
+              let ti = data.quests[qi].tasks.firstIndex(where: { $0.id == task.id }) else { return }
+        data.quests[qi].tasks[ti].done = false
+        data.quests[qi].tasks[ti].completedAt = nil
         save()
     }
-
-    func advanceStage(_ quest: Quest) {
-        guard let i = data.quests.firstIndex(where: { $0.id == quest.id }),
-              let next = data.quests[i].stage.next else { return }
-        let isLeader = leadFocus?.id == quest.id
-        let from = data.quests[i].stage
-        data.quests[i].stage = next
-        data.events.append(ProgressEvent(
-            questID: quest.id, goalID: data.quests[i].goalID, kind: .advancedStage,
-            detail: "\(from.title) → \(next.title)", questName: data.quests[i].name))
-        if isLeader { data.enoughDate = Date() }
-        save()
+    func deleteTask(_ task: TaskItem, in quest: Quest) {
+        guard let qi = data.quests.firstIndex(where: { $0.id == quest.id }) else { return }
+        data.quests[qi].tasks.removeAll { $0.id == task.id }; save()
     }
 
     func declareEnoughForToday() { data.enoughDate = Date(); save() }
     func reopenToday() { if hasDoneEnoughToday { data.enoughDate = nil; save() } }
 
-    /// Wipe everything and re-run the intro — a clean slate (keeps the chosen backdrop).
+    // MARK: Reset
     func resetAll() {
         let bg = data.backgroundImageName
         data = AppData(backgroundImageName: bg)
         save()
     }
 
-    // MARK: Background image
+    // MARK: AI import (Option A — paste bridge)
+    @discardableResult
+    func importFromAI(_ text: String) throws -> (quests: Int, tasks: Int) {
+        let payload = try AIImport.parse(text)
+        let questsIn = payload.quests ?? []
+        guard !questsIn.isEmpty else { throw AIImport.ImportError.empty }
+        var taskCount = 0
+        for qin in questsIn {
+            let name = qin.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { continue }
+            let dt = AIImport.deadlineType(from: qin.deadlineType)
+            let deadline = Deadline(type: dt, date: dt == .none ? nil : AIImport.date(from: qin.deadline))
+            let tasks = (qin.tasks ?? []).map { TaskItem(title: $0) }.filter { !$0.title.isEmpty }
+            taskCount += tasks.count
+            data.quests.append(Quest(name: name, importance: qin.importance ?? 3,
+                                     deadline: deadline, tasks: tasks))
+        }
+        save()
+        return (questsIn.count, taskCount)
+    }
 
+    // MARK: Background image
     var backgroundImage: NSImage? {
         if let cached = bgCache { return cached }
         guard let name = data.backgroundImageName else { return nil }
@@ -212,8 +187,6 @@ final class DataStore: ObservableObject {
         bgCache = img
         return img
     }
-
-    /// Copy a chosen image into the app-support Backgrounds folder and use it.
     func setBackgroundImage(from source: URL) {
         let fm = FileManager.default
         let bgDir = dir.appendingPathComponent("Backgrounds", isDirectory: true)
@@ -224,7 +197,6 @@ final class DataStore: ObservableObject {
         try? fm.removeItem(at: dest)
         do {
             try fm.copyItem(at: source, to: dest)
-            // Clear any other stored backdrops to avoid stale files.
             data.backgroundImageName = name
             bgCache = NSImage(contentsOf: dest)
             save()
@@ -234,40 +206,6 @@ final class DataStore: ObservableObject {
             #endif
         }
     }
-
-    func clearBackgroundImage() {
-        data.backgroundImageName = nil
-        bgCache = nil
-        save()
-    }
-
+    func clearBackgroundImage() { data.backgroundImageName = nil; bgCache = nil; save() }
     var hasCustomBackground: Bool { data.backgroundImageName != nil }
-
-    // MARK: Sample data
-
-    func loadSampleData() {
-        if data.goals.isEmpty {
-            ["My film work", "Provide for my family", "Stay creative"].enumerated().forEach { i, n in
-                data.goals.append(Goal(name: n, colorIndex: i))
-            }
-        }
-        let now = Date(); let cal = Calendar.current
-        func days(_ n: Int) -> Date { cal.date(byAdding: .day, value: n, to: now) ?? now }
-        let film = data.goals.first?.id
-        let family = data.goals.count > 1 ? data.goals[1].id : nil
-        let creative = data.goals.count > 2 ? data.goals[2].id : nil
-
-        let samples: [Quest] = [
-            Quest(name: "Short film — Pelagos", goalID: film, importance: 5,
-                  deadline: Deadline(type: .hard, date: days(4)), stage: .active, nextStep: "Render shot 14"),
-            Quest(name: "Client brand reel", goalID: family, importance: 3,
-                  deadline: Deadline(type: .soft, date: days(9)), stage: .developing, nextStep: "Lock the music selects"),
-            Quest(name: "Photo series", goalID: creative, importance: 2,
-                  deadline: .none, stage: .idea, nextStep: "Pick 30 favorite frames")
-        ]
-        for q in samples where !data.quests.contains(where: { $0.name == q.name }) {
-            data.quests.append(q)
-        }
-        save()
-    }
 }
