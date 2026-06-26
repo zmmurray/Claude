@@ -1,18 +1,20 @@
 import SwiftUI
 
 enum Destination: String, CaseIterable, Identifiable {
-    case today, quests
+    case today, quests, goals
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .today:  return "Today"
+        case .today: return "Today"
         case .quests: return "Quests"
+        case .goals: return "Goals"
         }
     }
     var icon: String {
         switch self {
-        case .today:  return "flag.fill"
+        case .today: return "sun.horizon.fill"
         case .quests: return "map.fill"
+        case .goals: return "mountain.2.fill"
         }
     }
 }
@@ -22,60 +24,64 @@ struct RootView: View {
     @State private var selection: Destination = .today
 
     var body: some View {
-        NavigationSplitView {
-            Sidebar(selection: $selection)
-                .navigationSplitViewColumnWidth(min: 184, ideal: 196, max: 220)
-        } detail: {
-            ZStack {
-                AppBackground()
-                Group {
-                    switch selection {
-                    case .today:  TodayView(goToQuests: { selection = .quests })
-                    case .quests: QuestsView()
+        ZStack {
+            AppBackdrop()
+
+            if !store.onboardingComplete {
+                OnboardingView()
+                    .transition(.opacity)
+            } else {
+                HStack(spacing: 0) {
+                    NavRail(selection: $selection)
+                    Group {
+                        switch selection {
+                        case .today:  TodayView(goToQuests: { selection = .quests })
+                        case .quests: QuestsView()
+                        case .goals:  GoalsView()
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
                 }
-                .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: selection)
+        .animation(.easeInOut(duration: 0.28), value: selection)
+        .animation(.easeInOut(duration: 0.35), value: store.onboardingComplete)
     }
 }
 
-private struct Sidebar: View {
+/// A slim, translucent navigation rail floating over the backdrop.
+private struct NavRail: View {
     @EnvironmentObject var store: DataStore
     @Binding var selection: Destination
 
     var body: some View {
-        ZStack {
-            AppBackground()
-            VStack(alignment: .leading, spacing: 0) {
-                // Wordmark
-                HStack(spacing: 9) {
-                    ZStack {
-                        Circle().fill(Theme.accentWash).frame(width: 30, height: 30)
-                        Image(systemName: "flag.fill")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Theme.accent)
-                    }
-                    Text("Waymark")
-                        .font(Theme.display(21, weight: .bold))
-                        .foregroundStyle(Theme.ink)
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 24)
-                .padding(.bottom, 26)
-
-                VStack(spacing: 5) {
-                    ForEach(Destination.allCases) { dest in
-                        NavButton(dest: dest, isSelected: selection == dest) {
-                            selection = dest
-                        }
-                    }
-                }
-                .padding(.horizontal, 10)
-
-                Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 9) {
+                Image(systemName: "location.north.circle.fill")
+                    .font(.system(size: 18)).foregroundStyle(Theme.accent)
+                Text("Waymark").font(Theme.display(20, weight: .semibold)).foregroundStyle(Theme.ink)
             }
+            .padding(.horizontal, 16).padding(.top, 40).padding(.bottom, 26)
+
+            VStack(spacing: 5) {
+                ForEach(Destination.allCases) { dest in
+                    NavButton(dest: dest, isSelected: selection == dest) { selection = dest }
+                }
+            }
+            .padding(.horizontal, 10)
+
+            Spacer()
+        }
+        .frame(width: 206)
+        .background(
+            LinearGradient(colors: [Color.white.opacity(0.30), Color.white.opacity(0.10)],
+                           startPoint: .top, endPoint: .bottom)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+        )
+        .overlay(alignment: .trailing) {
+            Rectangle().fill(Color.white.opacity(0.4)).frame(width: 1).ignoresSafeArea()
         }
     }
 }
@@ -85,25 +91,19 @@ private struct NavButton: View {
     let isSelected: Bool
     let action: () -> Void
     @State private var hovering = false
-
     var body: some View {
         Button(action: action) {
             HStack(spacing: 11) {
-                Image(systemName: dest.icon)
-                    .font(.system(size: 14))
-                    .frame(width: 20)
+                Image(systemName: dest.icon).font(.system(size: 14)).frame(width: 20)
                     .foregroundStyle(isSelected ? Theme.accent : Theme.inkFaint)
-                Text(dest.title)
-                    .font(Theme.bodyMed)
+                Text(dest.title).font(Theme.bodyMed)
                     .foregroundStyle(isSelected ? Theme.ink : Theme.inkSoft)
                 Spacer()
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12).padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: Theme.cornerS, style: .continuous)
-                    .fill(isSelected ? Theme.surface : (hovering ? Theme.surface.opacity(0.6) : .clear))
-                    .shadow(color: Theme.ink.opacity(isSelected ? 0.06 : 0), radius: 6, y: 2)
+                    .fill(isSelected ? Color.white.opacity(0.55) : (hovering ? Color.white.opacity(0.28) : .clear))
             )
         }
         .buttonStyle(.plain)

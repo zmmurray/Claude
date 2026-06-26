@@ -1,16 +1,17 @@
 import Foundation
 
-/// A project, framed as a quest. The single most important field is `nextStep`:
-/// a project name alone is paralyzing ("Pelagos"), a concrete next step is doable
-/// ("render shot 14"). The UI always surfaces the step, never just the name.
+/// A project, framed as a quest. Two fields carry the weight:
+/// `nextStep` — the single concrete thing you could start now (a project name alone
+/// is paralyzing); and `goalID` — which life goal this serves (the why).
 struct Quest: Codable, Identifiable, Hashable {
     var id: UUID
     var name: String
+    /// Which life goal this serves. Optional so nothing is forced.
+    var goalID: UUID?
     /// 1–5, set by hand. How much this quest matters to you.
     var importance: Int
     var deadline: Deadline
     var stage: Stage
-    /// The single concrete next step. THE most important field.
     var nextStep: String
     var notes: String
     var createdAt: Date
@@ -18,6 +19,7 @@ struct Quest: Codable, Identifiable, Hashable {
     init(
         id: UUID = UUID(),
         name: String,
+        goalID: UUID? = nil,
         importance: Int = 3,
         deadline: Deadline = .none,
         stage: Stage = .idea,
@@ -27,6 +29,7 @@ struct Quest: Codable, Identifiable, Hashable {
     ) {
         self.id = id
         self.name = name
+        self.goalID = goalID
         self.importance = min(5, max(1, importance))
         self.deadline = deadline
         self.stage = stage
@@ -35,9 +38,9 @@ struct Quest: Codable, Identifiable, Hashable {
         self.createdAt = createdAt
     }
 
-    /// Tolerate older saved files (which used `strategicWeight` / `nextAction` / `axis`).
+    /// Tolerate older saved files (which used `strategicWeight` / `nextAction`, no goal).
     enum CodingKeys: String, CodingKey {
-        case id, name, importance, deadline, stage, nextStep, notes, createdAt
+        case id, name, goalID, importance, deadline, stage, nextStep, notes, createdAt
         case strategicWeight, nextAction
     }
 
@@ -45,6 +48,7 @@ struct Quest: Codable, Identifiable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         name = (try? c.decode(String.self, forKey: .name)) ?? ""
+        goalID = try? c.decodeIfPresent(UUID.self, forKey: .goalID)
         importance = (try? c.decode(Int.self, forKey: .importance))
             ?? (try? c.decode(Int.self, forKey: .strategicWeight)) ?? 3
         deadline = (try? c.decode(Deadline.self, forKey: .deadline)) ?? .none
@@ -60,6 +64,7 @@ struct Quest: Codable, Identifiable, Hashable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(goalID, forKey: .goalID)
         try c.encode(importance, forKey: .importance)
         try c.encode(deadline, forKey: .deadline)
         try c.encode(stage, forKey: .stage)
@@ -69,11 +74,6 @@ struct Quest: Codable, Identifiable, Hashable {
     }
 
     var isDone: Bool { stage == .done }
-
-    var hasNextStep: Bool {
-        !nextStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    /// A quest can be a focus candidate only if it is unfinished and has a concrete step.
+    var hasNextStep: Bool { !nextStep.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     var isActionable: Bool { !isDone && hasNextStep }
 }

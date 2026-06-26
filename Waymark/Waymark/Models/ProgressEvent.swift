@@ -11,6 +11,8 @@ struct ProgressEvent: Codable, Identifiable, Hashable {
 
     var id: UUID
     var questID: UUID
+    /// The goal this progress served (captured at the time, so the journey is stable).
+    var goalID: UUID?
     var kind: Kind
     var date: Date
     /// Human-readable note, e.g. "render shot 14" or "Idea → Planning".
@@ -21,6 +23,7 @@ struct ProgressEvent: Codable, Identifiable, Hashable {
     init(
         id: UUID = UUID(),
         questID: UUID,
+        goalID: UUID? = nil,
         kind: Kind,
         date: Date = Date(),
         detail: String,
@@ -28,6 +31,7 @@ struct ProgressEvent: Codable, Identifiable, Hashable {
     ) {
         self.id = id
         self.questID = questID
+        self.goalID = goalID
         self.kind = kind
         self.date = date
         self.detail = detail
@@ -39,6 +43,7 @@ struct ProgressEvent: Codable, Identifiable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         questID = (try? c.decode(UUID.self, forKey: .questID)) ?? UUID()
+        goalID = try? c.decodeIfPresent(UUID.self, forKey: .goalID)
         let raw = (try? c.decode(String.self, forKey: .kind)) ?? "completedStep"
         kind = (raw == "advancedStage") ? .advancedStage : .completedStep
         date = (try? c.decode(Date.self, forKey: .date)) ?? Date()
@@ -47,6 +52,6 @@ struct ProgressEvent: Codable, Identifiable, Hashable {
     }
 
     enum CodingKeys: String, CodingKey {
-        case id, questID, kind, date, detail, questName
+        case id, questID, goalID, kind, date, detail, questName
     }
 }
