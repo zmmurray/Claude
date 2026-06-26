@@ -183,6 +183,14 @@ struct PanelView: View {
 
             Menu {
                 LaunchAtLoginToggle()
+                Divider()
+                Toggle("Auto-stop when idle", isOn: $store.autoStopWhenIdle)
+                Picker("Idle timeout", selection: $store.idleThresholdMinutes) {
+                    Text("After 5 min").tag(5)
+                    Text("After 10 min").tag(10)
+                    Text("After 15 min").tag(15)
+                }
+                .disabled(!store.autoStopWhenIdle)
                 if let id = store.selectedProjectId,
                    let p = store.project(id) {
                     Divider()

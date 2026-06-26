@@ -74,6 +74,11 @@ Click the menu bar icon → the **⋯** menu → toggle **Launch at login**. Thi
   Duration (decimal hours)` and reveals the file in Finder — the decimal-hours
   column is for invoicing.
 
+From the **⋯** menu you can turn on **Auto-stop when idle** (after 5/10/15 min
+of no keyboard or mouse activity). When it triggers, the session's end is
+backdated to the moment activity stopped, so the idle stretch is never counted.
+Reading idle time needs no special permission.
+
 If you quit while a timer is running, the session is finalized and saved
 automatically (it is never resumed on next launch, to avoid logging idle
 overnight time).

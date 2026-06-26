@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import CoreGraphics
 import ServiceManagement
 import UniformTypeIdentifiers
 
@@ -21,6 +22,21 @@ final class TimerStore: ObservableObject {
     /// Bumped every second to re-render anything showing elapsed time.
     @Published var now: Date = Date()
 
+    /// Auto-stop the running timer after a stretch of no keyboard/mouse activity.
+    @Published var autoStopWhenIdle: Bool {
+        didSet { UserDefaults.standard.set(autoStopWhenIdle, forKey: Keys.autoStopWhenIdle) }
+    }
+
+    /// Minutes of inactivity before auto-stop kicks in.
+    @Published var idleThresholdMinutes: Int {
+        didSet { UserDefaults.standard.set(idleThresholdMinutes, forKey: Keys.idleThresholdMinutes) }
+    }
+
+    private enum Keys {
+        static let autoStopWhenIdle = "autoStopWhenIdle"
+        static let idleThresholdMinutes = "idleThresholdMinutes"
+    }
+
     private var tickTimer: Timer?
     private var isLoading = false
 
@@ -29,17 +45,50 @@ final class TimerStore: ObservableObject {
     // MARK: - Lifecycle
 
     private init() {
+        let defaults = UserDefaults.standard
+        autoStopWhenIdle = defaults.bool(forKey: Keys.autoStopWhenIdle)
+        let savedThreshold = defaults.integer(forKey: Keys.idleThresholdMinutes)
+        idleThresholdMinutes = savedThreshold > 0 ? savedThreshold : 5
         load()
         startTick()
     }
 
     private func startTick() {
         let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.now = Date()
+            self?.tick()
         }
         // .common so it keeps firing while the menu bar window is open.
         RunLoop.main.add(timer, forMode: .common)
         tickTimer = timer
+    }
+
+    private func tick() {
+        now = Date()
+        guard autoStopWhenIdle, running != nil else { return }
+        let idle = Self.systemIdleSeconds()
+        if idle >= Double(idleThresholdMinutes * 60) {
+            stopDueToIdle(idleSeconds: idle)
+        }
+    }
+
+    /// Seconds since the last user input (mouse/keyboard) system-wide. This is a
+    /// passive read — no Accessibility permission or event tap required.
+    private static func systemIdleSeconds() -> TimeInterval {
+        let anyInput = CGEventType(rawValue: ~0) ?? .null
+        return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
+    }
+
+    /// Finalize the running session, backdating the end to when activity actually
+    /// stopped (now − idle) so the idle stretch itself is never counted.
+    private func stopDueToIdle(idleSeconds: TimeInterval) {
+        guard let running else { return }
+        let end = Date().addingTimeInterval(-idleSeconds)
+        let safeEnd = max(running.startDate, end)
+        sessions.append(Session(projectId: running.projectId,
+                                startDate: running.startDate,
+                                endDate: safeEnd))
+        self.running = nil
+        save()
     }
 
     // MARK: - Derived values
