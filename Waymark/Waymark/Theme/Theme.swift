@@ -90,6 +90,7 @@ struct GlassCard: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
+            // Decorative overlays must not intercept clicks meant for the content.
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
                     .fill(
@@ -97,10 +98,12 @@ struct GlassCard: ViewModifier {
                                        startPoint: .top, endPoint: .bottom)
                     )
                     .blendMode(.softLight)
+                    .allowsHitTesting(false)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
                     .strokeBorder(accentEdge ?? Color.white.opacity(0.55), lineWidth: accentEdge == nil ? 1 : 1.6)
+                    .allowsHitTesting(false)
             )
             .shadow(color: Theme.ink.opacity(strong ? 0.16 : 0.10), radius: strong ? 26 : 16, x: 0, y: strong ? 14 : 8)
     }
