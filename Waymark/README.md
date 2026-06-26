@@ -88,17 +88,22 @@ project.yml              XcodeGen spec (target, signing, Info.plist)
 build.sh                 one-command build
 Waymark/
   WaymarkApp.swift       app entry, window
-  Models/                Quest, Stage, Deadline, ProgressEvent, AppData
+  Models/                Goal, Quest, Stage, Deadline, ProgressEvent, AppData
   Store/
     DataStore.swift      persistence + all mutations (the source of truth)
     Ranking.swift        importance × deadline urgency → short focus list + reasons
-  Theme/Theme.swift      palette, type, reusable surfaces
+  Theme/Theme.swift      cinematic atmosphere, frosted glass, type
   Views/
-    RootView.swift       sidebar navigation (Today · Quests)
+    RootView.swift       full-bleed backdrop, nav rail (Today · Quests · Goals)
+    Onboarding/          guided first-run that explains the app
     Today/               TodayView, FocusCard, EnoughView  ← the soul
     Quests/              QuestsView, QuestRow, QuestEditor
-    Components/          shared pills, buttons, indicators
+    Goals/               GoalsView, GoalCard (long-game progress + appearance)
+    Components/          backdrop, glass, pills, buttons, indicators
 ```
+
+Set your own backdrop photo in **Goals → Appearance → Choose background**
+(falls back to the built-in misty atmosphere).
 
 > Built and edited on Linux; **the build step (`xcodebuild`) must run on macOS** —
 > which the cloud build does for you automatically (see the top section).
