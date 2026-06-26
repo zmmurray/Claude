@@ -16,7 +16,9 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    # macos-15 ships Xcode 16, which can read the project format XcodeGen
+    # generates. The app still targets macOS 14 (see deploymentTarget).
+    runs-on: macos-15
     steps:
       - name: Check out code
         uses: actions/checkout@v4
