@@ -1,8 +1,8 @@
 # Waymark
 
-A native macOS command center for the projects that make up a life — a calm,
-cinematic *expedition journal* that tells you what deserves your focus **today**,
-ranked by importance to your real goals, and that knows when you've done
+A native macOS command center for the projects that make up a life. Each project
+is a **quest**; Waymark shows you the single **next step** worth doing today —
+ranked by how important it is to you and what's due — and knows when you've done
 **enough**.
 
 Swift + SwiftUI, macOS 14+. Apple frameworks only. Local-only (no cloud, no
@@ -88,19 +88,17 @@ project.yml              XcodeGen spec (target, signing, Info.plist)
 build.sh                 one-command build
 Waymark/
   WaymarkApp.swift       app entry, window
-  Models/                Quest, Stage, Deadline, StrategicAxis, ProgressEvent,
-                         StrategicTrack, AppData
+  Models/                Quest, Stage, Deadline, ProgressEvent, AppData
   Store/
     DataStore.swift      persistence + all mutations (the source of truth)
-    Ranking.swift        urgency × strategic weight → short focus list + reasons
+    Ranking.swift        importance × deadline urgency → short focus list + reasons
   Theme/Theme.swift      palette, type, reusable surfaces
   Views/
-    RootView.swift       sidebar navigation
+    RootView.swift       sidebar navigation (Today · Quests)
     Today/               TodayView, FocusCard, EnoughView  ← the soul
     Quests/              QuestsView, QuestRow, QuestEditor
-    Tracks/              TracksView, TrackCard
-    Components/          shared chips, pills, buttons
+    Components/          shared pills, buttons, indicators
 ```
 
-> Built and edited on Linux; **the build step (`xcodebuild`) must run on macOS.**
-> The sources are written to compile cleanly on macOS 14+ with Xcode 15+.
+> Built and edited on Linux; **the build step (`xcodebuild`) must run on macOS** —
+> which the cloud build does for you automatically (see the top section).
