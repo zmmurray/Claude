@@ -1,0 +1,75 @@
+name: Build Tock
+
+# Builds the macOS menu bar app on a real Mac in the cloud and publishes the
+# finished Tock.app as a downloadable release. No local tools needed.
+
+on:
+  push:
+    branches: [ claude/macos-menu-bar-timer-m8p7ef ]
+    paths:
+      - 'Tock/**'
+      - '.github/workflows/build-tock.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: Tock
+        run: xcodegen generate
+
+      - name: Build Tock.app
+        working-directory: Tock
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Tock.xcodeproj \
+            -scheme Tock \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            build
+
+      - name: Zip the app
+        working-directory: Tock/build/Build/Products/Release
+        run: ditto -c -k --keepParent Tock.app "$GITHUB_WORKSPACE/Tock.zip"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tock-app
+          path: Tock.zip
+
+      - name: Publish downloadable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Latest build of Tock (the menu bar time tracker).
+
+          To install:
+          1. Download Tock.zip below.
+          2. Double-click it to unzip — you get Tock.app.
+          3. Drag Tock.app into your Applications folder.
+          4. Right-click Tock.app and choose Open (first time only). If macOS
+             still blocks it, go to System Settings > Privacy & Security,
+             scroll down, and click Open Anyway.
+          5. A stopwatch appears in your menu bar — there is no dock icon.
+
+          Built from commit ${GITHUB_SHA}."
+          gh release delete tock-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create tock-latest Tock.zip \
+            --title "Tock — latest build" \
+            --notes "$NOTES" \
+            --target "$GITHUB_SHA"
