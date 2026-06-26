@@ -1,0 +1,54 @@
+name: Waymark
+options:
+  bundleIdPrefix: com.cypressvideoco
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Sign ad-hoc so it runs locally without a paid Apple Developer account.
+    # Switch CODE_SIGN_STYLE to Automatic and set DEVELOPMENT_TEAM in Xcode if
+    # Gatekeeper complains.
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+
+targets:
+  Waymark:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Waymark
+    settings:
+      base:
+        PRODUCT_NAME: Waymark
+        PRODUCT_BUNDLE_IDENTIFIER: com.cypressvideoco.waymark
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+    info:
+      path: Waymark/Info.plist
+      properties:
+        CFBundleName: Waymark
+        CFBundleDisplayName: Waymark
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        CFBundlePackageType: APPL
+        LSMinimumSystemVersion: "14.0"
+        LSApplicationCategoryType: public.app-category.productivity
+        # A normal windowed app — shows in the Dock, not a menu-bar agent.
+        LSUIElement: false
+        NSHighResolutionCapable: true
+        NSHumanReadableCopyright: "Personal build."
