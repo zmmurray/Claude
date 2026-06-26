@@ -8,7 +8,35 @@ ranked by importance to your real goals, and that knows when you've done
 Swift + SwiftUI, macOS 14+. Apple frameworks only. Local-only (no cloud, no
 accounts, no network). See [`DESIGN.md`](DESIGN.md) for the philosophy.
 
-## Build & run (on a Mac)
+---
+
+## Easiest way to get it (no coding, no Xcode)
+
+A Mac in the cloud builds the app for you automatically; you just download the
+finished app. **You never touch a terminal or write any code.**
+
+1. Open your repository on **github.com** in a browser and click the
+   **Releases** link (right-hand side of the repo's main page), or go straight
+   to `…/releases`.
+2. Under the latest release ("Waymark — latest build"), download
+   **`Waymark.zip`**.
+3. In **Finder**, double-click `Waymark.zip` to unzip it → you get
+   **`Waymark.app`**.
+4. Drag `Waymark.app` into your **Applications** folder.
+5. Double-click it. The first time, macOS may say it can't verify the
+   developer. Go to **System Settings → Privacy & Security**, scroll down, and
+   click **Open Anyway**, then open Waymark again. (This is normal for a
+   personal app that isn't sold through the App Store — you only do it once.)
+
+That's it. After that, Waymark is a normal app you open whenever you like.
+
+> If you don't see a Releases entry yet, the cloud build is still running or
+> finished a moment ago — check the repo's **Actions** tab for a green
+> checkmark, then refresh the Releases page.
+
+---
+
+## Build & run yourself (on a Mac, optional)
 
 You need macOS with Xcode installed. From this folder:
 

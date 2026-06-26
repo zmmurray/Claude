@@ -1,0 +1,67 @@
+name: Build Waymark (macOS)
+
+# Builds the macOS app on a real Mac in the cloud and publishes a ready-to-run
+# download — no Xcode or Terminal needed on your end.
+
+on:
+  push:
+    branches:
+      - claude/macos-command-center-app-2ew5hn
+    paths:
+      - "Waymark/**"
+      - ".github/workflows/build-macos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to publish the downloadable Release
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the Xcode project
+        working-directory: Waymark
+        run: xcodegen generate
+
+      - name: Build Waymark.app (ad-hoc signed)
+        working-directory: Waymark
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Waymark.xcodeproj \
+            -scheme Waymark \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            build
+
+      - name: Package the app into a zip
+        working-directory: Waymark
+        run: |
+          cd build/Build/Products/Release
+          ditto -c -k --sequesterRsrc --keepParent Waymark.app "$GITHUB_WORKSPACE/Waymark.zip"
+          ls -lh "$GITHUB_WORKSPACE/Waymark.zip"
+
+      - name: Upload as a build artifact (fallback download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Waymark-macOS
+          path: Waymark.zip
+
+      - name: Publish to the Releases page (easy download link)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --cleanup-tag -y || true
+          gh release create latest Waymark.zip \
+            --title "Waymark — latest build" \
+            --notes "Download **Waymark.zip**, double-click to unzip, then drag **Waymark.app** into your Applications folder. On first launch macOS may say it can't verify the developer — go to System Settings → Privacy & Security and click **Open Anyway**. This is expected for a personal app that isn't sold through the App Store."
