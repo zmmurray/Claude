@@ -21,6 +21,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu-bar-only: no dock icon, no app switcher entry.
         NSApp.setActivationPolicy(.accessory)
+        // Set up the notification delegate so the "Resume tracking" button works.
+        _ = NotificationManager.shared
     }
 
     func applicationWillTerminate(_ notification: Notification) {

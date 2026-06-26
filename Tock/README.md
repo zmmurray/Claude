@@ -79,6 +79,10 @@ of no keyboard or mouse activity). When it triggers, the session's end is
 backdated to the moment activity stopped, so the idle stretch is never counted.
 Reading idle time needs no special permission.
 
+After an idle auto-stop, the next time you're active Tock posts a "Welcome back"
+notification with a **Resume tracking** button to pick that project back up with
+one click. Enabling auto-stop asks for notification permission the first time.
+
 If you quit while a timer is running, the session is finalized and saved
 automatically (it is never resumed on next launch, to avoid logging idle
 overnight time).

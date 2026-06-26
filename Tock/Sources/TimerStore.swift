@@ -24,8 +24,15 @@ final class TimerStore: ObservableObject {
 
     /// Auto-stop the running timer after a stretch of no keyboard/mouse activity.
     @Published var autoStopWhenIdle: Bool {
-        didSet { UserDefaults.standard.set(autoStopWhenIdle, forKey: Keys.autoStopWhenIdle) }
+        didSet {
+            UserDefaults.standard.set(autoStopWhenIdle, forKey: Keys.autoStopWhenIdle)
+            if autoStopWhenIdle { NotificationManager.shared.requestAuthorizationIfNeeded() }
+        }
     }
+
+    /// Set after an idle auto-stop: the project to offer to resume once the user
+    /// comes back. Cleared when the prompt fires or a timer is started manually.
+    private var pendingResumeProjectId: UUID?
 
     /// Minutes of inactivity before auto-stop kicks in.
     @Published var idleThresholdMinutes: Int {
@@ -64,9 +71,19 @@ final class TimerStore: ObservableObject {
 
     private func tick() {
         now = Date()
-        guard autoStopWhenIdle, running != nil else { return }
+        let trackingIdle = autoStopWhenIdle && running != nil
+        guard trackingIdle || pendingResumeProjectId != nil else { return }
         let idle = Self.systemIdleSeconds()
-        if idle >= Double(idleThresholdMinutes * 60) {
+
+        // The user is back at the keyboard — offer to resume what idle stopped.
+        if let pid = pendingResumeProjectId, idle < 5 {
+            pendingResumeProjectId = nil
+            if running == nil, let name = project(pid)?.name {
+                NotificationManager.shared.postResumePrompt(projectId: pid, projectName: name)
+            }
+        }
+
+        if trackingIdle, idle >= Double(idleThresholdMinutes * 60) {
             stopDueToIdle(idleSeconds: idle)
         }
     }
@@ -87,6 +104,7 @@ final class TimerStore: ObservableObject {
         sessions.append(Session(projectId: running.projectId,
                                 startDate: running.startDate,
                                 endDate: safeEnd))
+        pendingResumeProjectId = running.projectId
         self.running = nil
         save()
     }
@@ -161,8 +179,17 @@ final class TimerStore: ObservableObject {
     // MARK: - Timer control
 
     func start() {
-        guard running == nil, let projectId = selectedProjectId,
+        guard let projectId = selectedProjectId else { return }
+        start(projectId: projectId)
+    }
+
+    /// Start tracking a specific project (used by the Start button and the
+    /// "Resume tracking" notification action).
+    func start(projectId: UUID) {
+        guard running == nil,
               projects.contains(where: { $0.id == projectId }) else { return }
+        selectedProjectId = projectId
+        pendingResumeProjectId = nil
         running = RunningSession(projectId: projectId, startDate: Date())
         save()
     }
