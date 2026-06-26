@@ -86,7 +86,7 @@ struct OnboardingView: View {
                 TextField("e.g. Grow my film career", text: $goalDraft)
                     .textFieldStyle(.plain).font(Theme.body).foregroundStyle(Theme.ink)
                     .padding(11).background(RoundedRectangle(cornerRadius: Theme.cornerS).fill(Color.white.opacity(0.85)))
-                    .overlay(RoundedRectangle(cornerRadius: Theme.cornerS).strokeBorder(Theme.hairlineHi, lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: Theme.cornerS).strokeBorder(Theme.inkFaint.opacity(0.3), lineWidth: 1))
                     .onSubmit(addGoal)
                 Button(action: addGoal) { Image(systemName: "plus") }
                     .buttonStyle(PrimaryActionButtonStyle())
