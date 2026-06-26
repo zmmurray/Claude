@@ -66,8 +66,10 @@ Click the menu bar icon → the **⋯** menu → toggle **Launch at login**. Thi
 - **Start** begins a session; the menu bar switches to a filled stopwatch with
   the elapsed time ticking as `H:MM:SS`. **Stop** finalizes it.
 - The panel shows today's total across all projects and the selected project's
-  all-time total, plus a scrollable log of recent sessions (hover a row to
-  delete it).
+  all-time total, plus a scrollable log of recent sessions. Click a session (or
+  the pencil that appears on hover) to edit it — change the project, adjust the
+  start/end, or trim minutes off the end if you forgot to stop. Hover and click
+  the trash to delete one.
 - **Export CSV** writes `Project, Start, End, Duration (H:MM:SS),
   Duration (decimal hours)` and reveals the file in Finder — the decimal-hours
   column is for invoicing.

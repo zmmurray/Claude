@@ -137,6 +137,16 @@ final class TimerStore: ObservableObject {
         save()
     }
 
+    /// Edit a finalized session — fix the project, start, or end after the fact
+    /// (e.g. you forgot to stop the timer). End is clamped to be >= start.
+    func updateSession(id: UUID, projectId: UUID, startDate: Date, endDate: Date) {
+        guard let idx = sessions.firstIndex(where: { $0.id == id }) else { return }
+        let safeEnd = max(startDate, endDate)
+        sessions[idx] = Session(id: id, projectId: projectId,
+                                startDate: startDate, endDate: safeEnd)
+        save()
+    }
+
     /// Called from `applicationWillTerminate`: finalize the live session so the
     /// real duration is preserved on a graceful quit.
     func finalizeRunningSessionForTermination() {

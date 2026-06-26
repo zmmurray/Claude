@@ -202,11 +202,12 @@ struct PanelView: View {
     }
 }
 
-/// One row in the recent-sessions list, with a hover-revealed delete button.
+/// One row in the recent-sessions list, with hover-revealed edit/delete buttons.
 private struct SessionRow: View {
     @EnvironmentObject var store: TimerStore
     let session: Session
     @State private var hovering = false
+    @State private var isEditing = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -223,6 +224,14 @@ private struct SessionRow: View {
                 .font(.callout.monospacedDigit())
                 .foregroundStyle(.secondary)
             Button {
+                isEditing = true
+            } label: {
+                Image(systemName: "pencil")
+            }
+            .buttonStyle(.borderless)
+            .opacity(hovering ? 1 : 0)
+            .help("Edit session")
+            Button {
                 store.deleteSession(session.id)
             } label: {
                 Image(systemName: "trash")
@@ -235,6 +244,91 @@ private struct SessionRow: View {
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        .onTapGesture { isEditing = true }
+        .popover(isPresented: $isEditing, arrowEdge: .leading) {
+            SessionEditor(session: session) { isEditing = false }
+                .environmentObject(store)
+        }
+    }
+}
+
+/// Popover editor for fixing a session after the fact: change project, adjust
+/// start/end, or quickly trim minutes off the end (forgot-to-stop case).
+private struct SessionEditor: View {
+    @EnvironmentObject var store: TimerStore
+    let session: Session
+    let onClose: () -> Void
+
+    @State private var projectId: UUID
+    @State private var start: Date
+    @State private var end: Date
+
+    init(session: Session, onClose: @escaping () -> Void) {
+        self.session = session
+        self.onClose = onClose
+        _projectId = State(initialValue: session.projectId)
+        _start = State(initialValue: session.startDate)
+        _end = State(initialValue: session.endDate)
+    }
+
+    private var isValid: Bool { end > start }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Edit session")
+                .font(.headline)
+
+            Picker("Project", selection: $projectId) {
+                ForEach(store.projects) { project in
+                    Text(project.name).tag(project.id)
+                }
+            }
+            .labelsHidden()
+
+            DatePicker("Start", selection: $start,
+                       displayedComponents: [.date, .hourAndMinute])
+            DatePicker("End", selection: $end, in: start...,
+                       displayedComponents: [.date, .hourAndMinute])
+
+            HStack(spacing: 6) {
+                Text("Trim end")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach([5, 15, 30], id: \.self) { mins in
+                    Button("−\(mins)m") {
+                        end = max(start, end.addingTimeInterval(Double(-mins * 60)))
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+
+            HStack {
+                Text("Duration")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(Format.liveClock(max(0, end.timeIntervalSince(start))))
+                    .monospacedDigit()
+                    .foregroundStyle(isValid ? Color.primary : Color.red)
+            }
+            .font(.callout)
+
+            Divider()
+
+            HStack {
+                Button("Cancel", action: onClose)
+                Spacer()
+                Button("Save") {
+                    store.updateSession(id: session.id, projectId: projectId,
+                                        startDate: start, endDate: end)
+                    onClose()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(!isValid)
+            }
+        }
+        .padding(16)
+        .frame(width: 290)
     }
 }
 
