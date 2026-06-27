@@ -160,22 +160,17 @@ final class DataStore: ObservableObject {
     // MARK: AI import (Option A — paste bridge)
     @discardableResult
     func importFromAI(_ text: String) throws -> (quests: Int, tasks: Int) {
-        let payload = try AIImport.parse(text)
-        let questsIn = payload.quests ?? []
-        guard !questsIn.isEmpty else { throw AIImport.ImportError.empty }
+        let parsed = try AIImport.parse(text)
+        guard !parsed.isEmpty else { throw AIImport.ImportError.empty }
         var taskCount = 0
-        for qin in questsIn {
-            let name = qin.name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty else { continue }
-            let dt = AIImport.deadlineType(from: qin.deadlineType)
-            let deadline = Deadline(type: dt, date: dt == .none ? nil : AIImport.date(from: qin.deadline))
-            let tasks = (qin.tasks ?? []).map { TaskItem(title: $0) }.filter { !$0.title.isEmpty }
+        for p in parsed {
+            let deadline = Deadline(type: p.deadlineType, date: p.deadlineType == .none ? nil : p.deadlineDate)
+            let tasks = p.tasks.map { TaskItem(title: $0) }
             taskCount += tasks.count
-            data.quests.append(Quest(name: name, importance: qin.importance ?? 3,
-                                     deadline: deadline, tasks: tasks))
+            data.quests.append(Quest(name: p.name, importance: p.importance, deadline: deadline, tasks: tasks))
         }
         save()
-        return (questsIn.count, taskCount)
+        return (parsed.count, taskCount)
     }
 
     // MARK: Background image

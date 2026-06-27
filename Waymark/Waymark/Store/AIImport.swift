@@ -1,45 +1,57 @@
 import Foundation
 
 /// "Set up with AI" (Option A): the user pastes a prompt into their own ChatGPT/Claude,
-/// which already knows their world, and pastes the JSON reply back. No API key, no
-/// network — Waymark just parses the structured reply into quests and tasks.
+/// then pastes the reply back. To be forgiving, we accept a simple "Quest:/- task" list
+/// (what people and assistants naturally write) AND raw JSON. No API key, no network.
 enum AIImport {
 
     static let prompt = """
-    You are helping me set up an app called Waymark.
+    Help me set up my projects in an app called Waymark.
 
-    Definitions:
-    - A QUEST is a project I'm working on (e.g., "Pelagos — short film", "Kitchen remodel").
-    - A TASK is a small, concrete to-do inside a quest (e.g., "Render shot 14").
+    A QUEST is a project I'm working on. Under each quest are small TASKS (to-dos).
 
-    Using everything you know about my projects and work, produce my setup.
+    Based on what you know about my work and projects, list them in EXACTLY this format —
+    a "Quest:" line for each project, then a "- " line for each small task:
 
-    Output ONLY valid JSON — no commentary, no markdown code fences — in EXACTLY this shape:
+    Quest: Pelagos — short film
+    - Render shot 14
+    - Send the festival submission email
 
-    {
-      "quests": [
-        {
-          "name": "string",
-          "importance": 3,
-          "deadlineType": "none",
-          "deadline": "",
-          "tasks": ["first small to-do", "another to-do"]
-        }
-      ]
-    }
+    Quest: Client brand reel
+    - Lock the music selects
 
-    Rules:
-    - Add as many quests as make sense.
-    - importance is an integer 1–5 (5 = most important to me).
-    - deadlineType is one of: "none", "soft", "hard".
-    - deadline is "YYYY-MM-DD" when there's a date, otherwise "".
-    - tasks is a list of small, doable to-dos (2–6 per quest is ideal).
-
-    Output the JSON now.
+    Keep each task small and concrete (something I could start now). If you're not sure
+    what I'm working on, ask me first, then produce the list. Output only the list.
     """
 
-    struct Payload: Decodable { var quests: [QuestIn]? }
-    struct QuestIn: Decodable {
+    /// A quest ready to import.
+    struct ParsedQuest {
+        var name: String
+        var importance: Int = 3
+        var deadlineType: DeadlineType = .none
+        var deadlineDate: Date? = nil
+        var tasks: [String] = []
+    }
+
+    enum ImportError: LocalizedError {
+        case empty
+        var errorDescription: String? {
+            "I couldn't find any quests in that. Make sure the reply has a line like \"Quest: My project\" with \"- task\" lines under it, then paste it again."
+        }
+    }
+
+    /// Parse the reply: prefer JSON if present, otherwise read the plain list.
+    static func parse(_ raw: String) throws -> [ParsedQuest] {
+        if let json = parseJSON(raw), !json.isEmpty { return json }
+        let plain = parsePlain(raw)
+        if plain.isEmpty { throw ImportError.empty }
+        return plain
+    }
+
+    // MARK: JSON path (optional convenience)
+
+    private struct Payload: Decodable { var quests: [QuestIn]? }
+    private struct QuestIn: Decodable {
         var name: String
         var importance: Int?
         var deadlineType: String?
@@ -47,26 +59,94 @@ enum AIImport {
         var tasks: [String]?
     }
 
-    static func parse(_ raw: String) throws -> Payload {
-        guard let start = raw.firstIndex(of: "{"), let end = raw.lastIndex(of: "}"), start < end else {
-            throw ImportError.noJSON
-        }
+    private static func parseJSON(_ raw: String) -> [ParsedQuest]? {
+        guard let start = raw.firstIndex(of: "{"), let end = raw.lastIndex(of: "}"), start < end else { return nil }
         let slice = String(raw[start...end])
-        guard let data = slice.data(using: .utf8) else { throw ImportError.noJSON }
-        do { return try JSONDecoder().decode(Payload.self, from: data) }
-        catch { throw ImportError.badJSON }
+        guard let data = slice.data(using: .utf8),
+              let payload = try? JSONDecoder().decode(Payload.self, from: data),
+              let quests = payload.quests else { return nil }
+        return quests.compactMap { q in
+            let name = q.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return nil }
+            let dt = deadlineType(from: q.deadlineType)
+            return ParsedQuest(
+                name: name,
+                importance: min(5, max(1, q.importance ?? 3)),
+                deadlineType: dt,
+                deadlineDate: dt == .none ? nil : date(from: q.deadline),
+                tasks: (q.tasks ?? []).map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+            )
+        }
     }
 
-    enum ImportError: LocalizedError {
-        case noJSON, badJSON, empty
-        var errorDescription: String? {
-            switch self {
-            case .noJSON: return "I couldn't find any JSON in what you pasted. Paste the full reply from your assistant."
-            case .badJSON: return "That JSON didn't match the expected format. Ask your assistant to output only the JSON, exactly as the prompt shows."
-            case .empty: return "The reply didn't contain any quests."
+    // MARK: Plain-list path (the forgiving default)
+
+    private static func parsePlain(_ raw: String) -> [ParsedQuest] {
+        let lines = raw.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        var quests: [ParsedQuest] = []
+        var current: ParsedQuest?
+
+        for (i, line) in lines.enumerated() {
+            if let task = bulletContent(line) {
+                if current == nil { current = ParsedQuest(name: "My quests") }
+                if !task.isEmpty { current?.tasks.append(task) }
+                continue
+            }
+            // A non-bullet line is a quest only if explicitly marked or directly
+            // followed by a task bullet — otherwise it's prose and we skip it.
+            let lower = line.lowercased()
+            let explicit = ["quest:", "project:", "goal:"].contains { lower.hasPrefix($0) }
+                || line.hasPrefix("#") || line.hasPrefix("**")
+            let nextIsBullet = i + 1 < lines.count && bulletContent(lines[i + 1]) != nil
+            if explicit || nextIsBullet {
+                if let c = current { quests.append(c) }
+                current = ParsedQuest(name: cleanHeader(line))
             }
         }
+        if let c = current { quests.append(c) }
+
+        // Drop empties and a leading auto "My quests" that never collected tasks.
+        return quests.filter { !$0.name.isEmpty && !($0.name == "My quests" && $0.tasks.isEmpty) }
     }
+
+    /// If the line is a task bullet, return its text; otherwise nil.
+    private static func bulletContent(_ line: String) -> String? {
+        let markers = ["- ", "* ", "• ", "– ", "— ", "‣ ", "● ", "·  ", "[ ] ", "[] "]
+        for m in markers where line.hasPrefix(m) {
+            return stripCheckbox(String(line.dropFirst(m.count)))
+        }
+        // Numbered: "1. ", "2) "
+        var idx = line.startIndex
+        while idx < line.endIndex, line[idx].isNumber { idx = line.index(after: idx) }
+        if idx > line.startIndex, idx < line.endIndex, line[idx] == "." || line[idx] == ")" {
+            let after = line.index(after: idx)
+            if after <= line.endIndex {
+                return stripCheckbox(String(line[after...]).trimmingCharacters(in: .whitespaces))
+            }
+        }
+        return nil
+    }
+
+    private static func stripCheckbox(_ s: String) -> String {
+        var t = s.trimmingCharacters(in: .whitespaces)
+        for box in ["[ ] ", "[] ", "[x] ", "[X] "] where t.hasPrefix(box) { t = String(t.dropFirst(box.count)) }
+        return t.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Clean a quest header line of markdown and "Quest:/Project:" prefixes.
+    private static func cleanHeader(_ line: String) -> String {
+        var t = line.trimmingCharacters(in: CharacterSet(charactersIn: "#*_ \t"))
+        for prefix in ["quest:", "project:", "goal:"] where t.lowercased().hasPrefix(prefix) {
+            t = String(t.dropFirst(prefix.count))
+        }
+        t = t.trimmingCharacters(in: CharacterSet(charactersIn: "*_: \t"))
+        return t
+    }
+
+    // MARK: Shared helpers
 
     static func deadlineType(from s: String?) -> DeadlineType {
         switch (s ?? "").lowercased() {

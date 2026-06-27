@@ -26,8 +26,8 @@ struct AISetupView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("Your assistant already knows your projects and goals. Let it do the typing.")
-                        .font(Theme.body).foregroundStyle(Theme.inkSoft)
+                    Text("Your assistant already knows your projects. Copy the prompt, paste it into ChatGPT or Claude, then paste its reply back — a simple list is fine.")
+                        .font(Theme.body).foregroundStyle(Theme.inkSoft).lineSpacing(3)
 
                     step(1, "Copy the setup prompt") {
                         Button {
