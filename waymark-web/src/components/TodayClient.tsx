@@ -150,7 +150,7 @@ export default function TodayClient({
   return (
     <div className="space-y-6">
       {/* Section heading */}
-      <h1 className="text-xl font-bold text-pine">Right now</h1>
+      <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">Right now</h1>
 
       {undoBar}
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
