@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { copy } from "@/lib/copy";
 
 type Tab = { href: string; label: string; icon: (active: boolean) => React.ReactNode };
 
@@ -41,7 +42,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   return (
     <div className="min-h-screen">
-      <main className="mx-auto max-w-2xl px-5 pt-10 pb-32">{children}</main>
+      <main className="mx-auto max-w-2xl px-5 pt-8 pb-32">
+        <div className="text-center mb-7">
+          <Link href="/today" className="eyebrow !tracking-[0.3em] text-sage-deep">{copy.brand}</Link>
+        </div>
+        {children}
+      </main>
 
       <nav className="fixed bottom-0 inset-x-0 z-20">
         <div className="mx-auto max-w-2xl px-6 pb-6 pt-2">
