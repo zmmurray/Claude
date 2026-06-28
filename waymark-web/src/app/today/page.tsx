@@ -12,7 +12,7 @@ export default async function TodayPage() {
   if (!user) redirect("/login");
 
   const [{ data: snap }, { data: projects }, { data: tasks }] = await Promise.all([
-    supabase.from("focus_snapshots").select("gist,items").eq("user_id", user.id)
+    supabase.from("focus_snapshots").select("id,gist,items").eq("user_id", user.id)
       .order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("projects").select("id,name").eq("user_id", user.id).eq("is_done", false),
     supabase.from("tasks").select("id,title,project_id").eq("user_id", user.id).eq("done", false),
@@ -21,6 +21,7 @@ export default async function TodayPage() {
   return (
     <AppShell>
       <TodayClient
+        initialSnapshotId={(snap?.id as string | undefined) ?? null}
         initialGist={snap?.gist ?? ""}
         initialItems={(snap?.items ?? []) as FocusItem[]}
         hasContext={(projects?.length ?? 0) > 0}

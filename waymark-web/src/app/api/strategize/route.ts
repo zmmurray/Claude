@@ -21,9 +21,11 @@ export async function POST(req: Request) {
   const raw = await callModel(STRATEGIST_PERSONA, [{ role: "user", content: focusPrompt(contextText, steer, today) }]);
   const parsed = parseFocus(raw) ?? { gist: "I couldn't read the plan just now — try again in a sec.", items: [] };
 
-  await supabase.from("focus_snapshots").insert({
-    user_id: user.id, gist: parsed.gist, items: parsed.items,
-  });
+  const { data: inserted } = await supabase
+    .from("focus_snapshots")
+    .insert({ user_id: user.id, gist: parsed.gist, items: parsed.items })
+    .select("id")
+    .single();
 
-  return NextResponse.json(parsed);
+  return NextResponse.json({ ...parsed, snapshotId: inserted?.id ?? null });
 }

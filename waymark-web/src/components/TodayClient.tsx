@@ -11,20 +11,30 @@ type MiniTask = { id: string; title: string; project_id: string };
 type Undo = { type: "done" | "skip"; item: FocusItem; index: number; taskId: string | null } | null;
 
 export default function TodayClient({
-  initialGist, initialItems, hasContext, projects, tasks,
+  initialSnapshotId, initialGist, initialItems, hasContext, projects, tasks,
 }: {
+  initialSnapshotId: string | null;
   initialGist: string;
   initialItems: FocusItem[];
   hasContext: boolean;
   projects: Mini[];
   tasks: MiniTask[];
 }) {
+  const [snapshotId, setSnapshotId] = useState<string | null>(initialSnapshotId);
   const [gist, setGist] = useState(initialGist);
   const [items, setItems] = useState<FocusItem[]>(initialItems);
   const [loading, setLoading] = useState(false);
   const [finished, setFinished] = useState<null | "done" | "skip">(null);
   const [openTasks, setOpenTasks] = useState<MiniTask[]>(tasks);
   const [undo, setUndo] = useState<Undo>(null);
+
+  // Persist the visible list back onto the saved snapshot so dismissed items
+  // (Done / Not now) don't come back when the page reloads.
+  async function persist(nextItems: FocusItem[]) {
+    if (!snapshotId) return;
+    const sb = createSupabaseBrowser();
+    await sb.from("focus_snapshots").update({ items: nextItems }).eq("id", snapshotId);
+  }
 
   async function strategize(steer?: string) {
     setLoading(true); setFinished(null); setUndo(null);
@@ -36,6 +46,7 @@ export default function TodayClient({
       const data = await res.json();
       setGist(data.gist ?? "");
       setItems(Array.isArray(data.items) ? data.items : []);
+      setSnapshotId(data.snapshotId ?? null);
     } finally { setLoading(false); }
   }
 
@@ -63,6 +74,7 @@ export default function TodayClient({
     }
     const remaining = items.filter((_, i) => i !== index);
     setItems(remaining);
+    persist(remaining);
     setUndo({ type: "done", item, index, taskId });
     if (remaining.length === 0) setFinished("done");
   }
@@ -70,6 +82,7 @@ export default function TodayClient({
   function skip(item: FocusItem, index: number) {
     const remaining = items.filter((_, i) => i !== index);
     setItems(remaining);
+    persist(remaining);
     setUndo({ type: "skip", item, index, taskId: null });
     if (remaining.length === 0) setFinished("skip");
   }
@@ -82,11 +95,10 @@ export default function TodayClient({
       const id = undo.taskId;
       setOpenTasks((ts) => (ts.some((t) => t.id === id) ? ts : [...ts, { id, title: undo.item.title, project_id: "" }]));
     }
-    setItems((cur) => {
-      const next = [...cur];
-      next.splice(Math.min(undo.index, next.length), 0, undo.item);
-      return next;
-    });
+    const restored = [...items];
+    restored.splice(Math.min(undo.index, restored.length), 0, undo.item);
+    setItems(restored);
+    persist(restored);
     setFinished(null);
     setUndo(null);
   }
@@ -137,14 +149,14 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
-      {/* Editorial header */}
-      <div className="text-center">
-        <h1 className="font-display text-2xl tracking-[0.18em] text-pine">RIGHT NOW</h1>
-        <div className="eyebrow mt-1">Focus your path</div>
+      {/* Section label — quiet, not a title */}
+      <div className="flex items-baseline justify-between">
+        <div className="eyebrow">Right now</div>
+        <div className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Focus your path</div>
       </div>
 
       {undoBar}
-      {gist && <p className="text-center on-bg-soft leading-relaxed text-[15px] max-w-md mx-auto">{gist}</p>}
+      {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
       {hero ? (
         <div>
