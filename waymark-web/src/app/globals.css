@@ -2,50 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 
-/* Cinematic backdrop: a misty forest, darkened with a deep-green scrim for mood and
-   legibility. Loaded by the browser; a solid green sits underneath as a fallback. */
+/* Soft, calm atmosphere — gentle color "orbs" give the frosted glass something to
+   refract, no photo. */
 body {
   min-height: 100vh;
-  color: #e9f0ea; /* default text is light — it sits over the dark backdrop */
+  color: #22382f;
   background:
-    linear-gradient(180deg, rgba(14,26,21,0.66) 0%, rgba(10,20,16,0.82) 100%),
-    url('https://images.unsplash.com/photo-1511497584788-876760111969?w=2400&q=80&auto=format&fit=crop')
-      center / cover no-repeat fixed,
-    #122019;
+    radial-gradient(700px 520px at 12% 6%, rgba(120,184,150,0.45), transparent 60%),
+    radial-gradient(680px 520px at 90% 10%, rgba(255,238,205,0.55), transparent 60%),
+    radial-gradient(780px 620px at 82% 94%, rgba(116,170,182,0.42), transparent 62%),
+    radial-gradient(620px 540px at 6% 92%, rgba(150,196,160,0.40), transparent 60%),
+    linear-gradient(180deg, #ecf3ec 0%, #dfeae2 100%);
+  background-attachment: fixed;
 }
 
-/* Frosted cards: light and near-solid so text stays crisp over the busy backdrop.
-   Everything inside a card uses dark ink by default. */
+/* Real frosted glass: translucent + blurred so the colors behind shine through.
+   (-webkit- prefix is required on iOS Safari.) */
 .card {
-  @apply rounded-xl2 text-ink border;
-  background: rgba(255, 255, 255, 0.90);
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 14px 40px -16px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(10px);
+  @apply rounded-xl2 text-ink;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 14px 44px -20px rgba(34, 56, 47, 0.38);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
 }
 .card-strong {
-  @apply rounded-xl2 text-ink border;
-  background: rgba(255, 255, 255, 0.96);
-  border-color: #fff;
-  box-shadow: 0 26px 70px -22px rgba(0, 0, 0, 0.55);
+  @apply rounded-xl2 text-ink;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 26px 70px -24px rgba(34, 56, 47, 0.45);
+  -webkit-backdrop-filter: blur(26px) saturate(1.5);
+  backdrop-filter: blur(26px) saturate(1.5);
 }
 
-/* Text that sits directly on the backdrop. */
-.on-bg { color: #eef4ee; text-shadow: 0 1px 12px rgba(0,0,0,0.35); }
-.on-bg-soft { color: rgba(233,240,234,0.78); text-shadow: 0 1px 10px rgba(0,0,0,0.3); }
+/* Text directly on the backdrop (dark, since the backdrop is light). */
+.on-bg { color: #22382f; }
+.on-bg-soft { color: #4c5e55; }
 
 .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 font-medium transition; }
-.btn-primary { @apply btn text-white; background: linear-gradient(180deg, #2e7d5b, #1c5740); box-shadow: 0 10px 26px -10px rgba(28,87,64,0.7); }
+.btn-primary { @apply btn text-white; background: linear-gradient(180deg, #2e7d5b, #1c5740); box-shadow: 0 12px 28px -12px rgba(28,87,64,0.6); }
 .btn-primary:hover { filter: brightness(1.06); }
-.btn-quiet { @apply btn text-ink; background: rgba(255,255,255,0.82); border: 1px solid rgba(0,0,0,0.06); }
-.btn-quiet:hover { background: #fff; }
-.chip { @apply rounded-full px-3.5 py-1.5 text-sm transition; background: rgba(255,255,255,0.85); color: #4c5e55; border: 1px solid rgba(0,0,0,0.05); }
-.chip:hover { background: #fff; }
+.btn-quiet {
+  @apply btn text-ink;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.7);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.btn-quiet:hover { background: rgba(255,255,255,0.8); }
+.chip {
+  @apply rounded-full px-3.5 py-1.5 text-sm transition;
+  color: #3f5249;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.65);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.chip:hover { background: rgba(255,255,255,0.8); }
 .input {
   @apply w-full rounded-2xl px-4 py-3 text-ink outline-none transition;
-  background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.7);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
-.input:focus { border-color: rgba(46,125,91,0.55); box-shadow: 0 0 0 3px rgba(46,125,91,0.15); }
-.input::placeholder { color: #9aa8a0; }
+.input:focus { border-color: rgba(46,125,91,0.5); box-shadow: 0 0 0 3px rgba(46,125,91,0.15); }
+.input::placeholder { color: #8a988f; }

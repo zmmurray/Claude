@@ -75,7 +75,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-0 pt-3 pb-1 bg-gradient-to-t from-black/40 to-transparent space-y-3">
+      <div className="sticky bottom-0 pt-3 pb-2 space-y-3">
         {ready && (
           <button onClick={goToFocus} disabled={going} className="btn-primary w-full">
             {going ? "One sec…" : copy.chat.ready} →
