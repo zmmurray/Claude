@@ -6,6 +6,24 @@ import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 
+function kindMeta(kind: FocusItem["kind"]) {
+  switch (kind) {
+    case "quick": return { label: "Quick win", hex: "#c08a35", dot: "bg-honey", text: "text-honey", bg: "bg-honey/10" };
+    case "admin": return { label: "Admin", hex: "#5f6fa6", dot: "bg-slateblue", text: "text-slateblue", bg: "bg-slateblue/10" };
+    default:      return { label: "Moves the needle", hex: "#2e7d5b", dot: "bg-moss", text: "text-moss-deep", bg: "bg-moss/10" };
+  }
+}
+
+function KindPill({ kind }: { kind: FocusItem["kind"] }) {
+  const m = kindMeta(kind);
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${m.bg} ${m.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`} />
+      {m.label}
+    </span>
+  );
+}
+
 type Mini = { id: string; name: string };
 type MiniTask = { id: string; title: string; project_id: string };
 type Undo = { type: "done" | "skip"; item: FocusItem; index: number; taskId: string | null } | null;
@@ -135,8 +153,11 @@ export default function TodayClient({
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
       {hero ? (
-        <div className="card-strong p-7">
-          <div className="text-xs uppercase tracking-wider text-moss font-semibold mb-3">{copy.today.heroEyebrow}</div>
+        <div className="card-strong p-7" style={{ borderLeft: `4px solid ${kindMeta(hero.kind).hex}` }}>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs uppercase tracking-wider text-ink-faint font-semibold">{copy.today.heroEyebrow}</span>
+            <KindPill kind={hero.kind} />
+          </div>
           {hero.project && <div className="text-sm text-ink-faint mb-1">{hero.project}</div>}
           <h1 className="text-2xl font-semibold leading-snug">{hero.title}</h1>
           <p className="text-ink-soft mt-3">{hero.why}</p>
@@ -156,10 +177,13 @@ export default function TodayClient({
         <div className="space-y-2">
           <div className="text-sm on-bg-soft">{copy.today.more}</div>
           {rest.map((it, i) => (
-            <div key={i} className="card p-4 flex items-start gap-3">
+            <div key={i} className="card p-4 flex items-start gap-3" style={{ borderLeft: `3px solid ${kindMeta(it.kind).hex}` }}>
               <button onClick={() => done(it, i + 1)} className="mt-0.5 text-ink-faint hover:text-moss" title={copy.today.done}>○</button>
               <div className="flex-1">
-                <div className="font-medium">{it.title}</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{it.title}</span>
+                  <KindPill kind={it.kind} />
+                </div>
                 <div className="text-sm text-ink-soft">{it.why}</div>
               </div>
               <button onClick={() => skip(it, i + 1)} className="text-ink-faint hover:text-ink-soft text-sm">{copy.today.notNow}</button>
