@@ -45,21 +45,28 @@ is ticked — so when the important thing is handled, you tell them they're good
 export function focusPrompt(context: string, steer?: string, today?: string): string {
   return `${today ? `Today is ${today}.\n` : ""}${context}
 
-${steer ? `Right now, the user says: "${steer}". Factor that in.\n` : ""}
+${steer ? `The user just told you: "${steer}". Weigh this heavily — it changes the answer:
+- If they're WIPED / low on energy: rest comes FIRST. Lead by telling them it's okay to take
+  a short break or call it for now. Return an empty items list (or at most ONE small, genuinely
+  low-effort thing if they clearly want a little momentum) — never deep or heavy work. Only push
+  a task if a HARD deadline is truly due today and skipping it would cause real harm — and even
+  then, suggest a short rest first. A soft deadline, or anything a day or two out, does NOT
+  override rest.
+- If they're SHORT ON TIME: give the single highest-leverage thing that fits a small window.
+- If something BLEW UP: focus on the fire; let the rest wait.
+` : ""}
 Decide what they should focus on right now. Lead with anything small and urgent that
 truly must happen first, then the highest-leverage work toward their goals. Keep the list
 SHORT (1–4 items) — overwhelm is failure.
 
 Ordering rules:
 - A project with a SOONER deadline should generally rank ABOVE one with a later deadline or
-  no deadline. Never bury a near-deadline project beneath deadline-free work unless the
-  deadline-free one is clearly far more important.
-- If the user is wiped or short on time, it's fine to suggest rest when nothing is truly
-  urgent — but still surface anything with a near deadline so it doesn't get missed.
+  no deadline, unless the deadline-free one is clearly far more important.
 - If a note implies a time-based follow-up is due (e.g. "emailed the lead a week ago"),
   you may gently surface it.
 
-If there's genuinely nothing pressing, return an empty items list and say so warmly.
+If there's genuinely nothing pressing — or the user needs rest — return an empty items list
+and say so warmly in the gist.
 
 Return ONLY JSON in this shape (no prose, no code fences):
 {
