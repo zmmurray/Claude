@@ -42,20 +42,30 @@ You speak plainly, like a smart friend. The goal is a good life now, not after e
 is ticked — so when the important thing is handled, you tell them they're good and to stop.`;
 
 /** Prompt for producing the "Right now" focus. The model must return JSON. */
-export function focusPrompt(context: string, steer?: string): string {
-  return `${context}
+export function focusPrompt(context: string, steer?: string, today?: string): string {
+  return `${today ? `Today is ${today}.\n` : ""}${context}
 
 ${steer ? `Right now, the user says: "${steer}". Factor that in.\n` : ""}
 Decide what they should focus on right now. Lead with anything small and urgent that
 truly must happen first, then the highest-leverage work toward their goals. Keep the list
-SHORT (1–4 items) — overwhelm is failure. If there's genuinely nothing pressing, return an
-empty items list and say so warmly in the gist.
+SHORT (1–4 items) — overwhelm is failure.
+
+Ordering rules:
+- A project with a SOONER deadline should generally rank ABOVE one with a later deadline or
+  no deadline. Never bury a near-deadline project beneath deadline-free work unless the
+  deadline-free one is clearly far more important.
+- If the user is wiped or short on time, it's fine to suggest rest when nothing is truly
+  urgent — but still surface anything with a near deadline so it doesn't get missed.
+- If a note implies a time-based follow-up is due (e.g. "emailed the lead a week ago"),
+  you may gently surface it.
+
+If there's genuinely nothing pressing, return an empty items list and say so warmly.
 
 Return ONLY JSON in this shape (no prose, no code fences):
 {
   "gist": "one or two warm sentences on where things stand and the play right now",
   "items": [
-    { "title": "the concrete thing to do", "why": "one short, plain reason", "kind": "needle | quick | admin", "project": "which project it's part of" }
+    { "title": "the concrete thing to do", "why": "one short, plain reason", "project": "which project it's part of" }
   ]
 }`;
 }
@@ -81,11 +91,18 @@ export function parseFocus(raw: string): { gist: string; items: FocusItem[] } | 
 }
 
 /** System prompt for the conversational strategist. */
-export function chatSystem(context: string): string {
+export function chatSystem(context: string, today?: string): string {
   return `${STRATEGIST_PERSONA}
+${today ? `\nToday is ${today}.` : ""}
 
 Here is everything you currently know about the user:
 ${context}
+
+When the user mentions timing — "due in two days", "by Friday", "next week" — convert it to a
+concrete YYYY-MM-DD date and save it as the project's deadline (deadlineType "hard" if it's
+firm/"due", "soft" if it's an aim/target). When they mention a dated fact like "I emailed the
+lead Thursday", record it in that project's notes (with the date) so you can suggest a
+follow-up later. To update something that already exists, reuse its exact name in the update.
 
 Have a natural conversation. Ask clarifying questions when it helps you prioritize well.
 Keep replies short and plain — no bullet-point essays unless asked.

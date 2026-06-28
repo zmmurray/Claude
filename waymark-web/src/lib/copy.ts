@@ -16,7 +16,7 @@ export const copy = {
   nav: {
     today: "Right now",
     chat: "Let's talk it through",
-    plate: "Your plate",
+    plate: "All projects",
     account: "Account",
   },
 
@@ -57,7 +57,7 @@ export const copy = {
   },
 
   plate: {
-    title: "Your plate",
+    title: "All projects",
     empty: "Nothing here yet. Tell me what you're working on and it'll show up.",
     addProject: "What else are you working on?",
     addTask: "Add a to-do…",

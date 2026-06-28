@@ -17,7 +17,8 @@ export async function POST(req: Request) {
 
   const ctx = await loadContext(supabase, user.id);
   const contextText = buildContext(ctx);
-  const raw = await callModel(STRATEGIST_PERSONA, [{ role: "user", content: focusPrompt(contextText, steer) }]);
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const raw = await callModel(STRATEGIST_PERSONA, [{ role: "user", content: focusPrompt(contextText, steer, today) }]);
   const parsed = parseFocus(raw) ?? { gist: "I couldn't read the plan just now — try again in a sec.", items: [] };
 
   await supabase.from("focus_snapshots").insert({

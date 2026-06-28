@@ -38,29 +38,51 @@ export async function applyUpdate(
     if (!error && data) { goalIdByName.set(name.toLowerCase(), data.id); goalCount++; }
   }
 
+  // Existing projects by lowercased name → { id, notes }.
+  const { data: existingProjects } = await supabase.from("projects").select("id,name,notes").eq("user_id", userId);
+  const projByName = new Map<string, { id: string; notes: string }>();
+  (existingProjects ?? []).forEach((p: any) => projByName.set(String(p.name).toLowerCase(), { id: p.id, notes: p.notes ?? "" }));
+
   for (const p of update.projects ?? []) {
     const name = (p.name ?? "").trim();
     if (!name) continue;
     const goalId = p.goal ? goalIdByName.get(p.goal.toLowerCase()) ?? null : null;
-    const importance = Math.min(5, Math.max(1, Math.round(p.importance ?? 3)));
-    const deadlineType = ["none", "soft", "hard"].includes(p.deadlineType ?? "") ? p.deadlineType! : "none";
-    const { data: proj, error } = await supabase
-      .from("projects")
-      .insert({
-        user_id: userId, goal_id: goalId, name, importance,
-        deadline_type: deadlineType,
-        deadline: deadlineType === "none" ? null : p.deadline ?? null,
-        notes: p.notes ?? "",
-      })
-      .select("id").single();
-    if (error || !proj) continue;
-    projectCount++;
+    const deadlineType = ["none", "soft", "hard"].includes(p.deadlineType ?? "") ? p.deadlineType! : undefined;
+    const existing = projByName.get(name.toLowerCase());
+    let projectId: string;
+
+    if (existing) {
+      // Merge onto the existing project: set deadline/importance if given, append notes.
+      const patch: Record<string, unknown> = {};
+      if (typeof p.importance === "number") patch.importance = Math.min(5, Math.max(1, Math.round(p.importance)));
+      if (deadlineType) { patch.deadline_type = deadlineType; patch.deadline = deadlineType === "none" ? null : p.deadline ?? null; }
+      if (goalId) patch.goal_id = goalId;
+      if (p.notes && p.notes.trim()) patch.notes = existing.notes ? `${existing.notes}\n${p.notes.trim()}` : p.notes.trim();
+      if (Object.keys(patch).length) await supabase.from("projects").update(patch).eq("id", existing.id);
+      projectId = existing.id;
+    } else {
+      const { data: proj, error } = await supabase
+        .from("projects")
+        .insert({
+          user_id: userId, goal_id: goalId, name,
+          importance: Math.min(5, Math.max(1, Math.round(p.importance ?? 3))),
+          deadline_type: deadlineType ?? "none",
+          deadline: !deadlineType || deadlineType === "none" ? null : p.deadline ?? null,
+          notes: p.notes ?? "",
+        })
+        .select("id").single();
+      if (error || !proj) continue;
+      projectCount++;
+      projectId = proj.id;
+      projByName.set(name.toLowerCase(), { id: proj.id, notes: p.notes ?? "" });
+    }
+
     for (const t of p.tasks ?? []) {
       const title = (t.title ?? "").trim();
       if (!title) continue;
       const effort = ["quick", "medium", "deep"].includes(t.effort ?? "") ? t.effort! : "medium";
       const { error: te } = await supabase.from("tasks").insert({
-        user_id: userId, project_id: proj.id, title, urgent: !!t.urgent, effort,
+        user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
       });
       if (!te) taskCount++;
     }
