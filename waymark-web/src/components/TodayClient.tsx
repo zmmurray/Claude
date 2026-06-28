@@ -97,10 +97,10 @@ export default function TodayClient({
       <div className="min-h-[68vh] flex items-center justify-center">
         <div className="card-strong p-9 max-w-lg w-full text-center">
           <div className="mx-auto mb-5 h-16 w-16 rounded-full flex items-center justify-center text-3xl text-moss"
-               style={{ background: "radial-gradient(circle at 35% 30%, rgba(91,95,199,0.18), rgba(46,125,91,0.16))" }}>
+               style={{ background: "radial-gradient(circle at 35% 30%, rgba(233,185,141,0.25), rgba(142,182,155,0.28))" }}>
             ◆
           </div>
-          <h1 className="text-[28px] font-semibold mb-3 leading-tight">{copy.today.emptyTitle}</h1>
+          <h1 className="text-[28px] font-semibold mb-3 leading-tight tracking-tight">{copy.today.emptyTitle}</h1>
           <p className="text-ink-soft mb-7 leading-relaxed">{copy.today.emptyBody}</p>
           <Link href="/chat" className="btn-primary">{copy.today.emptyCta}</Link>
         </div>
@@ -141,11 +141,11 @@ export default function TodayClient({
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
       {hero ? (
-        <div className="card-strong p-7" style={{ borderLeft: "4px solid #2e7d5b" }}>
-          <div className="text-xs uppercase tracking-wider text-moss-deep font-semibold mb-3">{copy.today.heroEyebrow}</div>
-          {hero.project && <div className="text-sm text-ink-faint mb-1">{hero.project}</div>}
-          <h1 className="text-2xl font-semibold leading-snug">{hero.title}</h1>
-          <p className="text-ink-soft mt-3">{hero.why}</p>
+        <div className="card-strong p-8" style={{ borderLeft: "4px solid #E9B98D" }}>
+          <div className="eyebrow mb-3" style={{ color: "#d99e66" }}>{copy.today.heroEyebrow}</div>
+          {hero.project && <div className="text-sm text-ink-faint mb-2">{hero.project}</div>}
+          <h1 className="text-[30px] font-semibold leading-tight tracking-tight">{hero.title}</h1>
+          <p className="text-ink-soft mt-3 leading-relaxed">{hero.why}</p>
           <div className="flex gap-3 mt-6">
             <button onClick={() => done(hero, 0)} className="btn-primary">{copy.today.done}</button>
             <button onClick={() => skip(hero, 0)} className="btn-quiet">{copy.today.notNow}</button>
@@ -160,7 +160,7 @@ export default function TodayClient({
 
       {rest.length > 0 && (
         <div className="space-y-2">
-          <div className="text-sm on-bg-soft">{copy.today.more}</div>
+          <div className="eyebrow">{copy.today.more}</div>
           {rest.map((it, i) => (
             <div key={i} className="card p-4 flex items-start gap-3">
               <button onClick={() => done(it, i + 1)} className="mt-0.5 text-ink-faint hover:text-moss" title={copy.today.done}>○</button>

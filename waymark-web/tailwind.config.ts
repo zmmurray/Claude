@@ -5,12 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: { DEFAULT: "#22382f", soft: "#4c5e55", faint: "#7c8e83" },
-        canvas: { DEFAULT: "#eef4ea", low: "#e3ecdf" },
-        moss: { DEFAULT: "#2e7d5b", deep: "#1c5740" },
-        iris: { DEFAULT: "#5b5fc7", soft: "#8f93e0", deep: "#41459e" },
-        slateblue: { DEFAULT: "#6b7a8e", soft: "#93a1b3" },
-        clay: "#be6f54",
+        // Monochrome sage → pine.
+        pine: { darkest: "#051F20", dark: "#0B2B26", DEFAULT: "#163832" },
+        ink: { DEFAULT: "#163832", soft: "#3c5e52", faint: "#6f968a" },
+        canvas: { DEFAULT: "#DAF1DE", low: "#eef6ee" },
+        moss: { DEFAULT: "#235347", deep: "#163832" }, // primary accent (emerald→pine)
+        sage: { DEFAULT: "#8EB69B", deep: "#6e977f" },
+        mint: "#DAF1DE",
+        // The single warm point of light — used sparingly for the one thing that matters most.
+        peach: { DEFAULT: "#E9B98D", deep: "#d99e66" },
+        clay: "#b06a52", // errors only
       },
       fontFamily: {
         sans: ["ui-rounded", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],
