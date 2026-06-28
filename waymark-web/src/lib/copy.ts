@@ -15,7 +15,7 @@ export const copy = {
 
   nav: {
     today: "Right now",
-    chat: "Let's talk it through",
+    chat: "Tell me more",
     plate: "All projects",
     account: "Account",
   },
@@ -31,7 +31,7 @@ export const copy = {
     more: "Also important",
     enoughTitle: "You're good — go live your life.",
     enoughBody: "You did the thing that mattered. The rest can wait.",
-    talk: "Let's talk it through",
+    talk: "Tell me more",
     update: "I've got an update",
     refresh: "Anything changed?",
     undo: "Undo",
@@ -48,7 +48,7 @@ export const copy = {
   },
 
   chat: {
-    title: "Let's talk it through",
+    title: "Tell me more",
     intro: "Let's set you up — talk to me like a person. To start with the big picture: what are you ultimately working toward? (For example: “leave my full-time job and build steady income from a lifestyle business.”) Then we'll walk through what's on your plate.",
     placeholder: "Type whatever's on your mind…",
     send: "Send",

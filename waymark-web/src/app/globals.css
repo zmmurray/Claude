@@ -4,17 +4,18 @@
 
 :root { color-scheme: light; }
 
-/* A calm morning: pale mint ground with soft misty mountains far behind, washed
-   bright and airy. A whisper of dawn peach top-right. Open it and exhale. */
+/* A calm, cinematic green dawn — no photo, just light. Pale mint at the top
+   settling into deep pine at the foot, with soft drifting "mist" radials layered
+   over it so the screen feels deep and airy. Open it and exhale. */
 body {
   min-height: 100vh;
   color: #163832;
   background:
-    linear-gradient(180deg, rgba(246,251,246,0.90) 0%, rgba(222,242,225,0.80) 52%, rgba(142,182,155,0.55) 100%),
-    radial-gradient(680px 460px at 88% 4%, rgba(233,185,141,0.20), transparent 60%),
-    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=2400&q=80&auto=format&fit=crop')
-      center 18% / cover no-repeat fixed,
-    #e8f2e9;
+    radial-gradient(900px 520px at 50% -8%, rgba(255,255,255,0.55), transparent 60%),
+    radial-gradient(700px 420px at 12% 18%, rgba(218,241,222,0.55), transparent 62%),
+    radial-gradient(820px 520px at 88% 30%, rgba(142,182,155,0.32), transparent 60%),
+    linear-gradient(180deg, #eef7f0 0%, #cfe7d4 34%, #6e977f 72%, #163832 100%);
+  background-attachment: fixed;
 }
 
 /* Frosted glass on the mint ground — soft, breathable, generous radii. */

@@ -31,9 +31,9 @@ const person = (a: boolean) => (
 );
 
 const tabs: Tab[] = [
-  { href: "/today", label: "Today", icon: peaks },
+  { href: "/today", label: "Right now", icon: peaks },
   { href: "/plate", label: "Projects", icon: folder },
-  { href: "/chat", label: "Talk", icon: chat },
+  { href: "/chat", label: "Tell me more", icon: chat },
   { href: "/account", label: "Account", icon: person },
 ];
 
@@ -51,9 +51,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               const active = path === t.href;
               return (
                 <Link key={t.href} href={t.href}
-                  className={`flex flex-col items-center gap-1 px-4 py-1 transition ${active ? "text-moss-deep" : "text-sage-deep/70"}`}>
+                  className={`flex flex-col items-center gap-1 px-2 py-1 transition ${active ? "text-moss-deep" : "text-sage-deep/70"}`}>
                   {t.icon(active)}
-                  <span className="text-[10px] uppercase tracking-[0.14em] font-semibold">{t.label}</span>
+                  <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-center leading-tight whitespace-nowrap">{t.label}</span>
                 </Link>
               );
             })}

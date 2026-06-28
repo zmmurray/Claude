@@ -18,7 +18,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "Cambria", "serif"],
+        // All sans-serif now — "display" is the same family, just used at larger sizes.
+        display: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],
       },
       boxShadow: {
         soft: "0 10px 30px -12px rgba(34,56,47,0.22)",

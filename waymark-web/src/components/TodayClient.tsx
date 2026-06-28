@@ -139,7 +139,7 @@ export default function TodayClient({
     <div className="space-y-6">
       {/* Editorial header */}
       <div className="text-center">
-        <h1 className="font-display text-4xl tracking-[0.14em] text-pine">TODAY</h1>
+        <h1 className="font-display text-4xl tracking-[0.14em] text-pine">RIGHT NOW</h1>
         <div className="eyebrow mt-1">Focus your path</div>
       </div>
 
@@ -149,30 +149,41 @@ export default function TodayClient({
       {hero ? (
         <div>
           <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
-          {/* The one warm focal — peach */}
-          <div className="rounded-[30px] p-7 shadow-lift"
-               style={{ background: "linear-gradient(180deg,#fbe8d6,#f3d1b2)", border: "1px solid rgba(217,158,102,0.45)" }}>
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full flex items-center justify-center text-white shrink-0"
-                   style={{ background: "linear-gradient(180deg,#eaa877,#d99e66)" }}>
+          {/* The one focal card — deep cinematic pine. */}
+          <div className="rounded-[30px] p-7 shadow-lift relative overflow-hidden"
+               style={{ background: "linear-gradient(165deg,#1c463c 0%,#0B2B26 60%,#051F20 100%)", border: "1px solid rgba(142,182,155,0.22)" }}>
+            {/* faint mist + peak glow in the corner */}
+            <div className="pointer-events-none absolute inset-0"
+                 style={{ background: "radial-gradient(420px 240px at 88% -10%, rgba(142,182,155,0.30), transparent 60%)" }} />
+            <div className="relative flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center text-pine-darkest shrink-0"
+                   style={{ background: "linear-gradient(180deg,#bfe0c8,#8EB69B)" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20l5-9 3 4.5L15.5 9 20 20z" /></svg>
               </div>
               <div className="flex-1">
-                {hero.project && <div className="text-xs uppercase tracking-[0.14em] font-semibold" style={{ color: "#b58050" }}>{hero.project}</div>}
-                <h2 className="font-display text-[28px] leading-tight text-pine mt-0.5">{hero.title}</h2>
-                <p className="text-[#7c5a3a] mt-1 leading-relaxed">{hero.why}</p>
+                {hero.project && <div className="text-xs uppercase tracking-[0.14em] font-semibold text-sage">{hero.project}</div>}
+                <h2 className="font-display text-[28px] leading-tight text-white mt-0.5">{hero.title}</h2>
+                <p className="text-mint/80 mt-1 leading-relaxed">{hero.why}</p>
               </div>
             </div>
             {/* trail + flag motif */}
-            <div className="mt-5 flex items-center text-[#d99e66]">
+            <div className="relative mt-5 flex items-center text-sage">
               <svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round">
                 <path d="M2 11 C 40 11, 50 4, 90 5 S 150 10, 186 4" />
               </svg>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
             </div>
-            <div className="flex gap-3 mt-5">
-              <button onClick={() => done(hero, 0)} className="btn-primary">{copy.today.done}</button>
-              <button onClick={() => skip(hero, 0)} className="btn-quiet">{copy.today.notNow}</button>
+            <div className="relative flex gap-3 mt-5">
+              <button onClick={() => done(hero, 0)}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-pine-darkest transition hover:brightness-105"
+                style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)", boxShadow: "0 14px 30px -14px rgba(142,182,155,0.5)" }}>
+                {copy.today.done}
+              </button>
+              <button onClick={() => skip(hero, 0)}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium text-mint/90 transition hover:bg-white/10"
+                style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
+                {copy.today.notNow}
+              </button>
             </div>
           </div>
         </div>
