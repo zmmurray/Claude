@@ -63,6 +63,11 @@ export default function TodayClient({
     router.push(proj ? `/plate#proj-${proj.id}` : "/plate");
   }
 
+  // Open the chat to talk this item through.
+  function tellMore(item: FocusItem) {
+    router.push(item.project ? `/chat?about=${encodeURIComponent(item.project)}` : "/chat");
+  }
+
   function matchTask(item: FocusItem): MiniTask | undefined {
     const proj = projects.find((p) => p.name.toLowerCase() === (item.project ?? "").toLowerCase());
     return (
@@ -191,15 +196,19 @@ export default function TodayClient({
               </svg>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
             </div>
-            <div className="relative flex gap-3 mt-5">
+            <div className="relative flex items-center gap-2.5 mt-5">
               <button onClick={(e) => { e.stopPropagation(); done(hero, 0); }}
                 className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-pine-darkest transition hover:brightness-105"
                 style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)", boxShadow: "0 14px 30px -14px rgba(142,182,155,0.5)" }}>
                 {copy.today.done}
               </button>
-              <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
-                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium text-mint/90 transition hover:bg-white/10"
+              <button onClick={(e) => { e.stopPropagation(); tellMore(hero); }}
+                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium text-mint/90 transition hover:bg-white/10"
                 style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
+                {copy.today.talk}
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
+                className="ml-auto text-mint/50 hover:text-mint/80 text-sm px-2 transition">
                 {copy.today.notNow}
               </button>
             </div>
