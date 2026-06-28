@@ -18,7 +18,7 @@ export default async function AccountPage() {
         <form action="/auth/signout" method="post">
           <button type="submit" className="btn-quiet">{copy.account.signOut}</button>
         </form>
-        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-28-b</p>
+        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-28-c</p>
       </div>
     </AppShell>
   );
