@@ -28,7 +28,7 @@ export const copy = {
     why: "Why this",
     done: "Done",
     notNow: "Not now",
-    more: "What else I'd line up",
+    more: "Next up",
     enoughTitle: "You're good — go live your life.",
     enoughBody: "You did the thing that mattered. The rest can wait.",
     talk: "Let's talk it through",
