@@ -21,9 +21,9 @@ export const copy = {
   },
 
   today: {
-    emptyTitle: "Let's get the lay of the land",
+    emptyTitle: "What are you working on?",
     emptyBody: "Tell me what you're juggling — your projects and what you're aiming for — and I'll tell you where to put your time.",
-    emptyCta: "Tell me what's on my plate",
+    emptyCta: "What are you working on?",
     heroEyebrow: "Here's where I'd put your time",
     why: "Why this",
     done: "Done",
@@ -34,6 +34,10 @@ export const copy = {
     talk: "Let's talk it through",
     update: "I've got an update",
     refresh: "Anything changed?",
+    undo: "Undo",
+    markedDone: "Marked done.",
+    skipped: "Skipped for now.",
+    allDone: "That's everything I'd flag for now.",
   },
 
   steer: {
@@ -49,12 +53,13 @@ export const copy = {
     placeholder: "Type whatever's on your mind…",
     send: "Send",
     thinking: "Thinking…",
+    ready: "Show me what to focus on",
   },
 
   plate: {
     title: "Your plate",
     empty: "Nothing here yet. Tell me what you're working on and it'll show up.",
-    addProject: "What else is on your plate?",
+    addProject: "What else are you working on?",
     addTask: "Add a to-do…",
     finish: "Wrap this up",
     reopen: "Reopen",

@@ -25,7 +25,9 @@ export async function POST(req: Request) {
 
   const ctx = await loadContext(supabase, user.id);
   const raw = await callModel(chatSystem(buildContext(ctx)), turns, 1500);
-  const { text, update } = splitChatReply(raw);
+  const ready = raw.includes("<<READY>>");
+  const cleaned = raw.split("<<READY>>").join("").trim();
+  const { text, update } = splitChatReply(cleaned);
 
   let changed = false;
   if (update && (update.goals?.length || update.projects?.length)) {
@@ -39,5 +41,5 @@ export async function POST(req: Request) {
     { user_id: user.id, role: "assistant", content: reply },
   ]);
 
-  return NextResponse.json({ reply, changed });
+  return NextResponse.json({ reply, changed, ready });
 }

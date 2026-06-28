@@ -98,7 +98,12 @@ exactly "<<UPDATE>>" followed by JSON describing what to save, in this shape:
 { "goals": [{"name":"..."}], "projects": [{"name":"...","goal":"matching goal name","importance":1-5,"deadlineType":"none|soft|hard","deadline":"YYYY-MM-DD","tasks":[{"title":"...","urgent":false,"effort":"quick|medium|deep"}]}] }
 
 Only include the parts that are new or changed. Never show the user the <<UPDATE>> block or
-mention JSON — it's stripped out automatically. If nothing needs saving, don't add it.`;
+mention JSON — it's stripped out automatically. If nothing needs saving, don't add it.
+
+WHEN YOU HAVE ENOUGH to recommend where they should focus (you know their main projects and
+roughly what matters), add a line with exactly "<<READY>>" at the very end. It's stripped out
+and turns into a button that takes them to their focus. Don't add it until you genuinely have
+enough; once they've given you the basics, do add it.`;
 }
 
 const UPDATE_MARK = "<<UPDATE>>";
