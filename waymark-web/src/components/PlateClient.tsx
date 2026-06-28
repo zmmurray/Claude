@@ -16,7 +16,7 @@ export default function PlateClient({ userId }: { userId: string }) {
   async function load() {
     const [{ data: p }, { data: t }] = await Promise.all([
       sb.from("projects").select("*").eq("is_done", false).order("created_at"),
-      sb.from("tasks").select("*").eq("done", false).order("created_at"),
+      sb.from("tasks").select("*").order("created_at"),
     ]);
     setProjects((p ?? []) as Project[]);
     setTasks((t ?? []) as TaskItem[]);
@@ -53,8 +53,13 @@ export default function PlateClient({ userId }: { userId: string }) {
     load();
   }
   async function completeTask(id: string) {
-    await sb.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", id);
-    setTasks((ts) => ts.filter((t) => t.id !== id));
+    const completed_at = new Date().toISOString();
+    await sb.from("tasks").update({ done: true, completed_at }).eq("id", id);
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: true, completed_at } : t)));
+  }
+  async function reopenTask(id: string) {
+    await sb.from("tasks").update({ done: false, completed_at: null }).eq("id", id);
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: false, completed_at: null } : t)));
   }
   async function finishProject(id: string, name: string) {
     if (!window.confirm(`Close out “${name}”? It'll move off your list.`)) return;
@@ -82,6 +87,7 @@ export default function PlateClient({ userId }: { userId: string }) {
           tasks={tasks.filter((t) => t.project_id === p.id)}
           onAddTask={(title) => addTask(p.id, title)}
           onCompleteTask={completeTask}
+          onReopenTask={reopenTask}
           onFinish={() => finishProject(p.id, p.name)} />
       ))}
     </div>
@@ -89,16 +95,24 @@ export default function PlateClient({ userId }: { userId: string }) {
 }
 
 function ProjectCard({
-  project, tasks, onAddTask, onCompleteTask, onFinish, highlighted,
+  project, tasks, onAddTask, onCompleteTask, onReopenTask, onFinish, highlighted,
 }: {
   project: Project;
   tasks: TaskItem[];
   onAddTask: (t: string) => void;
   onCompleteTask: (id: string) => void;
+  onReopenTask: (id: string) => void;
   onFinish: () => void;
   highlighted?: boolean;
 }) {
   const [t, setT] = useState("");
+  const [showDone, setShowDone] = useState(false);
+
+  const open = tasks.filter((task) => !task.done);
+  const done = tasks.filter((task) => task.done);
+  const total = tasks.length;
+  const pct = total ? Math.round((done.length / total) * 100) : 0;
+
   return (
     <div id={`proj-${project.id}`}
       className={`card p-5 scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}>
@@ -107,16 +121,50 @@ function ProjectCard({
         <span className="text-sm text-ink-faint">importance {project.importance}/5</span>
       </div>
 
+      {/* Progress toward done */}
+      {total > 0 && (
+        <div className="mt-3">
+          <div className="flex justify-between text-xs text-ink-faint mb-1.5">
+            <span>{done.length} of {total} done</span>
+            <span>{pct}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-moss/15 overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${pct}%`, background: "linear-gradient(90deg,#8EB69B,#235347)" }} />
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 space-y-2">
-        {tasks.map((task) => (
+        {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">
-            <button onClick={() => onCompleteTask(task.id)} className="text-ink-faint hover:text-moss">○</button>
+            <button onClick={() => onCompleteTask(task.id)} className="text-ink-faint hover:text-moss" title="Mark done">○</button>
             <span>{task.title}</span>
             {task.urgent && <span className="text-xs text-clay">urgent</span>}
           </div>
         ))}
-        {tasks.length === 0 && <div className="text-sm text-ink-faint">No to-dos yet.</div>}
+        {open.length === 0 && total > 0 && <div className="text-sm text-moss">All to-dos done 🎉</div>}
+        {total === 0 && <div className="text-sm text-ink-faint">No to-dos yet.</div>}
       </div>
+
+      {/* Completed tasks (tucked away) */}
+      {done.length > 0 && (
+        <div className="mt-3">
+          <button onClick={() => setShowDone((s) => !s)} className="text-xs font-medium text-moss">
+            {showDone ? "Hide completed" : `Show ${done.length} completed`}
+          </button>
+          {showDone && (
+            <div className="mt-2 space-y-2">
+              {done.map((task) => (
+                <div key={task.id} className="flex items-center gap-3 text-ink-faint">
+                  <button onClick={() => onReopenTask(task.id)} className="text-moss" title="Reopen">●</button>
+                  <span className="line-through">{task.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-4 space-y-2">
         <input className="input py-2" placeholder={copy.plate.addTask}

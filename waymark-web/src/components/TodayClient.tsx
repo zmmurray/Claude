@@ -205,7 +205,7 @@ export default function TodayClient({
               <button onClick={(e) => { e.stopPropagation(); tellMore(hero); }}
                 className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium text-mint/90 transition hover:bg-white/10"
                 style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
-                {copy.today.talk}
+                {copy.today.discuss}
               </button>
               <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
                 className="ml-auto text-mint/50 hover:text-mint/80 text-sm px-2 transition">
