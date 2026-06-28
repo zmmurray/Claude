@@ -228,7 +228,6 @@ export default function TodayClient({
         <div className="flex flex-wrap gap-2">
           <button className="chip" onClick={() => strategize(copy.steer.shortTime)} disabled={loading}>{copy.steer.shortTime}</button>
           <button className="chip" onClick={() => strategize(copy.steer.wiped)} disabled={loading}>{copy.steer.wiped}</button>
-          <button className="chip" onClick={() => strategize(copy.steer.fire)} disabled={loading}>{copy.steer.fire}</button>
           <button className="chip" onClick={() => strategize()} disabled={loading}>{copy.today.refresh}</button>
           <Link href="/chat" className="chip">{copy.today.talk}</Link>
         </div>

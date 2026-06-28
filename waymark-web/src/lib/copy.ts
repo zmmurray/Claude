@@ -33,7 +33,7 @@ export const copy = {
     enoughBody: "You did the thing that mattered. The rest can wait.",
     talk: "Tell me more",
     update: "I've got an update",
-    refresh: "Anything changed?",
+    refresh: "Something changed.",
     undo: "Undo",
     markedDone: "Marked done.",
     skipped: "Skipped for now.",
@@ -43,8 +43,7 @@ export const copy = {
   steer: {
     prompt: "How's your day looking?",
     shortTime: "I'm short on time",
-    wiped: "I'm wiped",
-    fire: "Something blew up",
+    wiped: "I need a break",
   },
 
   chat: {
