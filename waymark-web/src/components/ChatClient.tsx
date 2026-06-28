@@ -37,30 +37,51 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   const recogRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
   const [micSupported, setMicSupported] = useState(false);
+  const [micNote, setMicNote] = useState<string | null>(null);
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setMicSupported(!!SR);
   }, []);
 
   function toggleMic() {
-    if (listening) { recogRef.current?.stop(); return; }
+    if (listening) { try { recogRef.current?.stop(); } catch {} setListening(false); return; }
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const r = new SR();
+    if (!SR) { setMicNote("Voice isn't supported here — use your keyboard's mic instead."); return; }
+
+    let r: any;
+    try { r = new SR(); } catch { setMicNote("Couldn't start the mic — try again."); return; }
     r.lang = "en-US";
     r.interimResults = true;
-    r.continuous = true;
+    r.continuous = false; // iOS Safari is flaky with continuous mode
+
     const base = input ? input.replace(/\s*$/, "") + " " : "";
+    r.onstart = () => { setMicNote(null); setListening(true); };
     r.onresult = (e: any) => {
       let said = "";
       for (let i = 0; i < e.results.length; i++) said += e.results[i][0].transcript;
       setInput(base + said);
     };
+    r.onerror = (e: any) => {
+      const err = e?.error;
+      if (err === "not-allowed" || err === "service-not-allowed")
+        setMicNote("Mic is blocked. Allow microphone for this site in Safari, then tap again.");
+      else if (err === "no-speech")
+        setMicNote("Didn't catch anything — tap the mic and try again.");
+      else if (err !== "aborted")
+        setMicNote("Mic stopped — tap to try again.");
+      setListening(false);
+    };
     r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
+
     recogRef.current = r;
+    setMicNote(null);
     setListening(true);
-    r.start();
+    try {
+      r.start();
+    } catch {
+      setListening(false);
+      setMicNote("Couldn't start the mic — tap to try again.");
+    }
   }
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy, ready]);
@@ -147,6 +168,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
           </button>
         )}
         {listening && <div className="text-sm text-clay text-center">Listening… talk away, tap the mic to stop.</div>}
+        {micNote && !listening && <div className="text-sm text-clay text-center">{micNote}</div>}
         <div className="flex gap-2 items-end">
           {micSupported && (
             <button onClick={toggleMic} aria-label="Talk it out"
