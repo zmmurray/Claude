@@ -18,6 +18,27 @@ body {
   background-attachment: fixed;
 }
 
+/* Misty mountain header band — like the reference. Not a full-bleed photo behind
+   the cards (that looked cheap); a crisp atmospheric band pinned to the top that
+   dissolves into the green ground. A pale wash up top keeps headings legible. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50vh;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(247,251,248,0.70) 0%, rgba(247,251,248,0.20) 24%, rgba(190,219,197,0) 52%),
+    linear-gradient(180deg, rgba(22,56,50,0.04), rgba(110,151,127,0.16)),
+    url('https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=2400&q=85&auto=format&fit=crop')
+      center 22% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 48%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 48%, rgba(0,0,0,0) 100%);
+}
+
 /* Frosted glass on the mint ground — soft, breathable, generous radii. */
 .card {
   border-radius: 26px;
