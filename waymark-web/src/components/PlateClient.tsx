@@ -44,11 +44,11 @@ export default function PlateClient({ userId }: { userId: string }) {
     load();
   }
 
-  if (loading) return <div className="text-ink-faint">Loading…</div>;
+  if (loading) return <div className="on-bg-soft">Loading…</div>;
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold">{copy.plate.title}</h1>
+      <h1 className="text-2xl font-semibold on-bg">{copy.plate.title}</h1>
 
       <div className="card p-4 flex gap-2">
         <input className="input" placeholder={copy.plate.addProject}
@@ -57,7 +57,7 @@ export default function PlateClient({ userId }: { userId: string }) {
         <button className="btn-primary" onClick={addProject}>Add</button>
       </div>
 
-      {projects.length === 0 && <p className="text-ink-soft">{copy.plate.empty}</p>}
+      {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
 
       {projects.map((p) => (
         <ProjectCard key={p.id} project={p}

@@ -132,7 +132,7 @@ export default function TodayClient({
   return (
     <div className="space-y-5">
       {undoBar}
-      {gist && <p className="text-ink-soft leading-relaxed">{gist}</p>}
+      {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
       {hero ? (
         <div className="card-strong p-7">
@@ -154,7 +154,7 @@ export default function TodayClient({
 
       {rest.length > 0 && (
         <div className="space-y-2">
-          <div className="text-sm text-ink-faint">{copy.today.more}</div>
+          <div className="text-sm on-bg-soft">{copy.today.more}</div>
           {rest.map((it, i) => (
             <div key={i} className="card p-4 flex items-start gap-3">
               <button onClick={() => done(it, i + 1)} className="mt-0.5 text-ink-faint hover:text-moss" title={copy.today.done}>○</button>

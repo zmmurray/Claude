@@ -59,7 +59,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 9rem)" }}>
-      <h1 className="text-xl font-semibold mb-4">{copy.chat.title}</h1>
+      <h1 className="text-xl font-semibold mb-4 on-bg">{copy.chat.title}</h1>
 
       <div className="flex-1 space-y-3">
         {messages.length === 0 && <div className="card p-5 text-ink-soft leading-relaxed">{copy.chat.intro}</div>}
@@ -70,12 +70,12 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
             </div>
           </div>
         ))}
-        {busy && <div className="text-sm text-ink-faint">{copy.chat.thinking}</div>}
-        {savedNote && <div className="text-sm text-moss">Saved that to your plate.</div>}
+        {busy && <div className="text-sm on-bg-soft">{copy.chat.thinking}</div>}
+        {savedNote && <div className="text-sm on-bg-soft">Saved that to your plate.</div>}
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-0 pt-3 pb-1 bg-gradient-to-t from-canvas to-transparent space-y-3">
+      <div className="sticky bottom-0 pt-3 pb-1 bg-gradient-to-t from-black/40 to-transparent space-y-3">
         {ready && (
           <button onClick={goToFocus} disabled={going} className="btn-primary w-full">
             {going ? "One sec…" : copy.chat.ready} →
