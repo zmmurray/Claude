@@ -4,12 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { copy } from "@/lib/copy";
 import type { ChatMessage } from "@/lib/types";
+import { createSupabaseBrowser } from "@/lib/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
 export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initial.map((m) => ({ role: m.role, content: m.content })));
+
+  // Always reload saved history from the database on mount, so navigating back to
+  // the chat shows the real conversation (not a cached empty page).
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+    supabase
+      .from("chat_messages")
+      .select("role,content")
+      .order("created_at", { ascending: true })
+      .limit(200)
+      .then(({ data }) => {
+        if (data && data.length) setMessages(data.map((m: any) => ({ role: m.role, content: m.content })));
+      });
+  }, []);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedNote, setSavedNote] = useState(false);
