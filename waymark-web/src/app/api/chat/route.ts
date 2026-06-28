@@ -1,0 +1,43 @@
+import { NextResponse } from "next/server";
+import { createSupabaseServer } from "@/lib/supabase/server";
+import { loadContext, applyUpdate } from "@/lib/data";
+import { buildContext, chatSystem, splitChatReply } from "@/lib/strategy";
+import { callModel, type ChatTurn } from "@/lib/llm";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(req: Request) {
+  const supabase = createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "not signed in" }, { status: 401 });
+
+  let message = "";
+  try { message = String((await req.json())?.message ?? "").trim(); } catch {}
+  if (!message) return NextResponse.json({ error: "empty message" }, { status: 400 });
+
+  // Recent history (oldest → newest)
+  const { data: history } = await supabase
+    .from("chat_messages").select("role,content")
+    .eq("user_id", user.id).order("created_at", { ascending: false }).limit(12);
+  const turns: ChatTurn[] = (history ?? []).reverse().map((m: any) => ({ role: m.role, content: m.content }));
+  turns.push({ role: "user", content: message });
+
+  const ctx = await loadContext(supabase, user.id);
+  const raw = await callModel(chatSystem(buildContext(ctx)), turns, 1500);
+  const { text, update } = splitChatReply(raw);
+
+  let changed = false;
+  if (update && (update.goals?.length || update.projects?.length)) {
+    const counts = await applyUpdate(supabase, user.id, update);
+    changed = counts.goals + counts.projects + counts.tasks > 0;
+  }
+
+  const reply = text || "Got it.";
+  await supabase.from("chat_messages").insert([
+    { user_id: user.id, role: "user", content: message },
+    { user_id: user.id, role: "assistant", content: reply },
+  ]);
+
+  return NextResponse.json({ reply, changed });
+}
