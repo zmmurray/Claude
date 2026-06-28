@@ -2,37 +2,64 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { copy } from "@/lib/copy";
 
-const tabs = [
-  { href: "/today", label: copy.nav.today },
-  { href: "/plate", label: copy.nav.plate },
-  { href: "/chat", label: copy.nav.chat },
+type Tab = { href: string; label: string; icon: (active: boolean) => React.ReactNode };
+
+const peaks = (a: boolean) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth={a ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 19l5.5-9 3.5 5.2L15.5 8 21 19z" />
+  </svg>
+);
+const folder = (a: boolean) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth={a ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3.5" y="6.5" width="17" height="13" rx="2.5" /><path d="M3.5 10.5h17" />
+  </svg>
+);
+const chat = (a: boolean) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth={a ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3V7a2 2 0 012-2z" />
+  </svg>
+);
+const person = (a: boolean) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth={a ? 2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8.5" r="3.5" /><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6" />
+  </svg>
+);
+
+const tabs: Tab[] = [
+  { href: "/today", label: "Today", icon: peaks },
+  { href: "/plate", label: "Projects", icon: folder },
+  { href: "/chat", label: "Talk", icon: chat },
+  { href: "/account", label: "Account", icon: person },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/40 border-b border-white/50">
-        <div className="mx-auto max-w-3xl px-5 h-14 flex items-center gap-4">
-          <Link href="/today" className="font-semibold text-lg mr-2 text-ink tracking-tight">{copy.brand}</Link>
-          <nav className="flex items-center gap-1 text-sm">
+      <main className="mx-auto max-w-2xl px-5 pt-10 pb-32">{children}</main>
+
+      <nav className="fixed bottom-0 inset-x-0 z-20">
+        <div className="mx-auto max-w-2xl px-6 pb-6 pt-2">
+          <div className="flex items-center justify-around rounded-full px-2 py-2.5 bg-white/55 border border-white/60 shadow-soft"
+               style={{ WebkitBackdropFilter: "blur(20px)", backdropFilter: "blur(20px)" }}>
             {tabs.map((t) => {
               const active = path === t.href;
               return (
                 <Link key={t.href} href={t.href}
-                  className={`px-3 py-1.5 rounded-full transition ${active ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:bg-white/60"}`}>
-                  {t.label}
+                  className={`flex flex-col items-center gap-1 px-4 py-1 transition ${active ? "text-moss-deep" : "text-sage-deep/70"}`}>
+                  {t.icon(active)}
+                  <span className="text-[10px] uppercase tracking-[0.14em] font-semibold">{t.label}</span>
                 </Link>
               );
             })}
-          </nav>
-          <div className="flex-1" />
-          <Link href="/account" className="text-ink-faint hover:text-ink-soft text-sm">{copy.nav.account}</Link>
+          </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>
+      </nav>
     </div>
   );
 }

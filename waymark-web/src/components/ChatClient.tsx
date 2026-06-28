@@ -74,7 +74,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 9rem)" }}>
-      <h1 className="text-xl font-semibold mb-4 on-bg">{copy.chat.title}</h1>
+      <h1 className="font-display text-3xl mb-4 text-pine">{copy.chat.title}</h1>
 
       <div className="flex-1 space-y-3">
         {messages.length === 0 && <div className="card p-5 text-ink-soft leading-relaxed">{copy.chat.intro}</div>}
@@ -90,7 +90,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
         <div ref={endRef} />
       </div>
 
-      <div className="sticky bottom-0 pt-3 pb-2 space-y-3">
+      <div className="sticky bottom-24 pt-3 space-y-3">
         {ready && (
           <button onClick={goToFocus} disabled={going} className="btn-primary w-full">
             {going ? "One sec…" : copy.chat.ready} →

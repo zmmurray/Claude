@@ -17,7 +17,8 @@ const config: Config = {
         clay: "#b06a52", // errors only
       },
       fontFamily: {
-        sans: ["ui-rounded", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],
+        sans: ["var(--font-sans)", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Helvetica", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "Cambria", "serif"],
       },
       boxShadow: {
         soft: "0 10px 30px -12px rgba(34,56,47,0.22)",

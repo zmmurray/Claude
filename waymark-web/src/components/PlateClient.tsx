@@ -48,7 +48,10 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-semibold on-bg">{copy.plate.title}</h1>
+      <div className="text-center mb-1">
+        <h1 className="font-display text-4xl tracking-[0.12em] text-pine uppercase">{copy.plate.title}</h1>
+        <div className="eyebrow mt-1">What matters most</div>
+      </div>
 
       <div className="card p-4 flex gap-2">
         <input className="input" placeholder={copy.plate.addProject}

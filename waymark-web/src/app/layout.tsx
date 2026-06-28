@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], display: "swap" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const display = Cormorant_Garamond({
+  subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-display", display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Waymark",
-  description: "Know what to actually work on — without the overwhelm.",
+  description: "Find what matters today.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} antialiased`}>{children}</body>
+      <body className={`${inter.variable} ${display.variable} font-sans antialiased`}>{children}</body>
     </html>
   );
 }

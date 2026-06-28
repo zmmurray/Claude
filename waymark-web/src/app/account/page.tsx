@@ -13,7 +13,7 @@ export default async function AccountPage() {
   return (
     <AppShell>
       <div className="card-strong p-7 max-w-md">
-        <h1 className="text-xl font-semibold mb-2">{copy.account.title}</h1>
+        <h1 className="font-display text-3xl mb-2 text-pine">{copy.account.title}</h1>
         <p className="text-ink-soft mb-6">Signed in as {user.email}</p>
         <form action="/auth/signout" method="post">
           <button type="submit" className="btn-quiet">{copy.account.signOut}</button>

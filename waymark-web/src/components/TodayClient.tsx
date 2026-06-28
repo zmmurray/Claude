@@ -100,7 +100,7 @@ export default function TodayClient({
                style={{ background: "radial-gradient(circle at 35% 30%, rgba(233,185,141,0.25), rgba(142,182,155,0.28))" }}>
             ◆
           </div>
-          <h1 className="text-[28px] font-semibold mb-3 leading-tight tracking-tight">{copy.today.emptyTitle}</h1>
+          <h1 className="font-display text-[34px] mb-3 leading-tight tracking-tight text-pine">{copy.today.emptyTitle}</h1>
           <p className="text-ink-soft mb-7 leading-relaxed">{copy.today.emptyBody}</p>
           <Link href="/chat" className="btn-primary">{copy.today.emptyCta}</Link>
         </div>
@@ -122,7 +122,7 @@ export default function TodayClient({
         {undoBar}
         <div className="card-strong p-8">
           <div className="text-3xl mb-3">{finished === "done" ? "✓" : "👍"}</div>
-          <h1 className="text-2xl font-semibold mb-1">
+          <h1 className="font-display text-[28px] mb-1 text-pine leading-tight">
             {finished === "done" ? copy.today.enoughTitle : copy.today.allDone}
           </h1>
           <p className="text-ink-soft">{finished === "done" ? copy.today.enoughBody : "Nothing else I'd push right now."}</p>
@@ -136,46 +136,75 @@ export default function TodayClient({
   const rest = items.slice(1);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Editorial header */}
+      <div className="text-center">
+        <h1 className="font-display text-4xl tracking-[0.14em] text-pine">TODAY</h1>
+        <div className="eyebrow mt-1">Focus your path</div>
+      </div>
+
       {undoBar}
-      {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
+      {gist && <p className="text-center on-bg-soft leading-relaxed text-[15px] max-w-md mx-auto">{gist}</p>}
 
       {hero ? (
-        <div className="card-strong p-8" style={{ borderLeft: "4px solid #E9B98D" }}>
-          <div className="eyebrow mb-3" style={{ color: "#d99e66" }}>{copy.today.heroEyebrow}</div>
-          {hero.project && <div className="text-sm text-ink-faint mb-2">{hero.project}</div>}
-          <h1 className="text-[30px] font-semibold leading-tight tracking-tight">{hero.title}</h1>
-          <p className="text-ink-soft mt-3 leading-relaxed">{hero.why}</p>
-          <div className="flex gap-3 mt-6">
-            <button onClick={() => done(hero, 0)} className="btn-primary">{copy.today.done}</button>
-            <button onClick={() => skip(hero, 0)} className="btn-quiet">{copy.today.notNow}</button>
+        <div>
+          <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
+          {/* The one warm focal — peach */}
+          <div className="rounded-[30px] p-7 shadow-lift"
+               style={{ background: "linear-gradient(180deg,#fbe8d6,#f3d1b2)", border: "1px solid rgba(217,158,102,0.45)" }}>
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center text-white shrink-0"
+                   style={{ background: "linear-gradient(180deg,#eaa877,#d99e66)" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20l5-9 3 4.5L15.5 9 20 20z" /></svg>
+              </div>
+              <div className="flex-1">
+                {hero.project && <div className="text-xs uppercase tracking-[0.14em] font-semibold" style={{ color: "#b58050" }}>{hero.project}</div>}
+                <h2 className="font-display text-[28px] leading-tight text-pine mt-0.5">{hero.title}</h2>
+                <p className="text-[#7c5a3a] mt-1 leading-relaxed">{hero.why}</p>
+              </div>
+            </div>
+            {/* trail + flag motif */}
+            <div className="mt-5 flex items-center text-[#d99e66]">
+              <svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round">
+                <path d="M2 11 C 40 11, 50 4, 90 5 S 150 10, 186 4" />
+              </svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => done(hero, 0)} className="btn-primary">{copy.today.done}</button>
+              <button onClick={() => skip(hero, 0)} className="btn-quiet">{copy.today.notNow}</button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="card-strong p-7">
-          <h1 className="text-xl font-semibold mb-1">Nothing pressing right now.</h1>
+        <div className="card-strong p-7 text-center">
+          <h2 className="font-display text-2xl mb-1 text-pine">Nothing pressing right now.</h2>
           <p className="text-ink-soft">{gist || "You're good — enjoy the quiet."}</p>
         </div>
       )}
 
       {rest.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <div className="eyebrow">{copy.today.more}</div>
           {rest.map((it, i) => (
-            <div key={i} className="card p-4 flex items-start gap-3">
-              <button onClick={() => done(it, i + 1)} className="mt-0.5 text-ink-faint hover:text-moss" title={copy.today.done}>○</button>
-              <div className="flex-1">
-                <div className="font-medium">{it.title}</div>
-                <div className="text-sm text-ink-soft">{it.why}</div>
+            <div key={i} className="card p-4 flex items-center gap-3">
+              <button onClick={() => done(it, i + 1)}
+                className="h-9 w-9 rounded-full bg-moss/12 text-moss flex items-center justify-center hover:bg-moss/20 transition shrink-0"
+                title={copy.today.done}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /></svg>
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-pine truncate">{it.title}</div>
+                <div className="text-sm text-ink-faint truncate">{it.project ?? it.why}</div>
               </div>
-              <button onClick={() => skip(it, i + 1)} className="text-ink-faint hover:text-ink-soft text-sm">{copy.today.notNow}</button>
+              <button onClick={() => skip(it, i + 1)} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
             </div>
           ))}
         </div>
       )}
 
       <div className="card p-4">
-        <div className="text-sm text-ink-faint mb-2">{copy.steer.prompt}</div>
+        <div className="eyebrow mb-2.5">{copy.steer.prompt}</div>
         <div className="flex flex-wrap gap-2">
           <button className="chip" onClick={() => strategize(copy.steer.shortTime)} disabled={loading}>{copy.steer.shortTime}</button>
           <button className="chip" onClick={() => strategize(copy.steer.wiped)} disabled={loading}>{copy.steer.wiped}</button>
