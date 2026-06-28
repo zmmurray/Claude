@@ -149,11 +149,8 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
-      {/* Section label — quiet, not a title */}
-      <div className="flex items-baseline justify-between">
-        <div className="eyebrow">Right now</div>
-        <div className="text-[11px] uppercase tracking-[0.18em] text-ink-faint">Focus your path</div>
-      </div>
+      {/* Section heading */}
+      <h1 className="text-xl font-bold text-pine">Right now</h1>
 
       {undoBar}
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
