@@ -56,6 +56,11 @@ export default function PlateClient({ userId }: { userId: string }) {
     await sb.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", id);
     setTasks((ts) => ts.filter((t) => t.id !== id));
   }
+  async function finishProject(id: string, name: string) {
+    if (!window.confirm(`Close out “${name}”? It'll move off your list.`)) return;
+    await sb.from("projects").update({ is_done: true }).eq("id", id);
+    load();
+  }
 
   if (loading) return <div className="on-bg-soft">Loading…</div>;
 
@@ -76,19 +81,21 @@ export default function PlateClient({ userId }: { userId: string }) {
         <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
           tasks={tasks.filter((t) => t.project_id === p.id)}
           onAddTask={(title) => addTask(p.id, title)}
-          onCompleteTask={completeTask} />
+          onCompleteTask={completeTask}
+          onFinish={() => finishProject(p.id, p.name)} />
       ))}
     </div>
   );
 }
 
 function ProjectCard({
-  project, tasks, onAddTask, onCompleteTask, highlighted,
+  project, tasks, onAddTask, onCompleteTask, onFinish, highlighted,
 }: {
   project: Project;
   tasks: TaskItem[];
   onAddTask: (t: string) => void;
   onCompleteTask: (id: string) => void;
+  onFinish: () => void;
   highlighted?: boolean;
 }) {
   const [t, setT] = useState("");
@@ -111,11 +118,14 @@ function ProjectCard({
         {tasks.length === 0 && <div className="text-sm text-ink-faint">No to-dos yet.</div>}
       </div>
 
-      <div className="mt-4 flex gap-2 items-center">
+      <div className="mt-4 space-y-2">
         <input className="input py-2" placeholder={copy.plate.addTask}
           value={t} onChange={(e) => setT(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { onAddTask(t); setT(""); } }} />
-        <Link className="btn-quiet whitespace-nowrap" href={`/chat?about=${encodeURIComponent(project.name)}`}>{copy.plate.addInfo}</Link>
+        <div className="flex gap-2">
+          <Link className="btn-quiet flex-1 text-center whitespace-nowrap" href={`/chat?about=${encodeURIComponent(project.name)}`}>{copy.plate.addInfo}</Link>
+          <button className="btn-quiet whitespace-nowrap" onClick={onFinish}>{copy.plate.finish}</button>
+        </div>
       </div>
     </div>
   );

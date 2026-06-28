@@ -61,7 +61,7 @@ export const copy = {
     addProject: "What else are you working on?",
     addTask: "Add a to-do…",
     addInfo: "Add more info",
-    finish: "Wrap this up",
+    finish: "Close it out",
     reopen: "Reopen",
   },
 

@@ -33,6 +33,36 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   const endRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
+  // --- Voice: talk it out, words land in the box (phone's own speech engine) ---
+  const recogRef = useRef<any>(null);
+  const [listening, setListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(false);
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setMicSupported(!!SR);
+  }, []);
+
+  function toggleMic() {
+    if (listening) { recogRef.current?.stop(); return; }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = "en-US";
+    r.interimResults = true;
+    r.continuous = true;
+    const base = input ? input.replace(/\s*$/, "") + " " : "";
+    r.onresult = (e: any) => {
+      let said = "";
+      for (let i = 0; i < e.results.length; i++) said += e.results[i][0].transcript;
+      setInput(base + said);
+    };
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    recogRef.current = r;
+    setListening(true);
+    r.start();
+  }
+
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy, ready]);
 
   // Grow the textarea with its content (up to a cap).
@@ -55,6 +85,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   }, []);
 
   async function send() {
+    if (listening) recogRef.current?.stop();
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
@@ -106,7 +137,19 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
             {going ? "One sec…" : copy.chat.ready} →
           </button>
         )}
+        {listening && <div className="text-sm text-clay text-center">Listening… talk away, tap the mic to stop.</div>}
         <div className="flex gap-2 items-end">
+          {micSupported && (
+            <button onClick={toggleMic} aria-label="Talk it out"
+              className="shrink-0 h-12 w-12 rounded-full flex items-center justify-center transition"
+              style={listening
+                ? { background: "#b06a52", color: "#fff", boxShadow: "0 0 0 6px rgba(176,106,82,0.18)" }
+                : { background: "rgba(255,255,255,0.6)", border: "1px solid rgba(142,182,155,0.45)", color: "#235347" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 10a7 7 0 0 0 14 0" /><line x1="12" y1="17" x2="12" y2="21" /><line x1="8" y1="21" x2="16" y2="21" />
+              </svg>
+            </button>
+          )}
           <textarea
             ref={taRef}
             value={input}
