@@ -44,6 +44,16 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   }
   useEffect(autosize, [input]);
 
+  // If we arrived from "Add more info" on a project, pre-fill the box so the
+  // person can just start talking about that project.
+  useEffect(() => {
+    const about = new URLSearchParams(window.location.search).get("about");
+    if (about) {
+      setInput(`A bit more about ${about}: `);
+      setTimeout(() => taRef.current?.focus(), 0);
+    }
+  }, []);
+
   async function send() {
     const text = input.trim();
     if (!text || busy) return;

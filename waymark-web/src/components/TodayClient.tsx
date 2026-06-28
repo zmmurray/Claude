@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
@@ -20,6 +21,7 @@ export default function TodayClient({
   projects: Mini[];
   tasks: MiniTask[];
 }) {
+  const router = useRouter();
   const [snapshotId, setSnapshotId] = useState<string | null>(initialSnapshotId);
   const [gist, setGist] = useState(initialGist);
   const [items, setItems] = useState<FocusItem[]>(initialItems);
@@ -54,6 +56,12 @@ export default function TodayClient({
     if (hasContext && initialItems.length === 0 && !initialGist) strategize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Jump to this item's project over on the All projects page.
+  function openProject(item: FocusItem) {
+    const proj = projects.find((p) => p.name.toLowerCase() === (item.project ?? "").toLowerCase());
+    router.push(proj ? `/plate#proj-${proj.id}` : "/plate");
+  }
 
   function matchTask(item: FocusItem): MiniTask | undefined {
     const proj = projects.find((p) => p.name.toLowerCase() === (item.project ?? "").toLowerCase());
@@ -158,8 +166,9 @@ export default function TodayClient({
       {hero ? (
         <div>
           <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
-          {/* The one focal card — deep cinematic pine. */}
-          <div className="rounded-[30px] p-7 shadow-lift relative overflow-hidden"
+          {/* The one focal card — deep cinematic pine. Tap to open the project. */}
+          <div onClick={() => openProject(hero)} role="button"
+               className="rounded-[30px] p-7 shadow-lift relative overflow-hidden cursor-pointer"
                style={{ background: "linear-gradient(165deg,#1c463c 0%,#0B2B26 60%,#051F20 100%)", border: "1px solid rgba(142,182,155,0.22)" }}>
             {/* faint mist + peak glow in the corner */}
             <div className="pointer-events-none absolute inset-0"
@@ -183,12 +192,12 @@ export default function TodayClient({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
             </div>
             <div className="relative flex gap-3 mt-5">
-              <button onClick={() => done(hero, 0)}
+              <button onClick={(e) => { e.stopPropagation(); done(hero, 0); }}
                 className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-pine-darkest transition hover:brightness-105"
                 style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)", boxShadow: "0 14px 30px -14px rgba(142,182,155,0.5)" }}>
                 {copy.today.done}
               </button>
-              <button onClick={() => skip(hero, 0)}
+              <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
                 className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium text-mint/90 transition hover:bg-white/10"
                 style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
                 {copy.today.notNow}
@@ -207,8 +216,9 @@ export default function TodayClient({
         <div className="space-y-2.5">
           <div className="eyebrow">{copy.today.more}</div>
           {rest.map((it, i) => (
-            <div key={i} className="card p-4 flex items-center gap-3">
-              <button onClick={() => done(it, i + 1)}
+            <div key={i} onClick={() => openProject(it)} role="button"
+              className="card p-4 flex items-center gap-3 cursor-pointer">
+              <button onClick={(e) => { e.stopPropagation(); done(it, i + 1); }}
                 className="h-9 w-9 rounded-full bg-moss/12 text-moss flex items-center justify-center hover:bg-moss/20 transition shrink-0"
                 title={copy.today.done}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /></svg>
@@ -217,7 +227,7 @@ export default function TodayClient({
                 <div className="font-medium text-pine truncate">{it.title}</div>
                 <div className="text-sm text-ink-faint truncate">{it.project ?? it.why}</div>
               </div>
-              <button onClick={() => skip(it, i + 1)} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
+              <button onClick={(e) => { e.stopPropagation(); skip(it, i + 1); }} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
             </div>
           ))}
         </div>

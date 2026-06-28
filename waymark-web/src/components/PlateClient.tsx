@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { copy } from "@/lib/copy";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import type { Project, TaskItem } from "@/lib/types";
@@ -23,6 +24,22 @@ export default function PlateClient({ userId }: { userId: string }) {
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
 
+  // If we arrived from a "Right now" card (/plate#proj-<id>), scroll to it and
+  // give it a brief highlight so it's obvious which project we landed on.
+  const [highlight, setHighlight] = useState<string | null>(null);
+  useEffect(() => {
+    if (loading) return;
+    const id = window.location.hash.replace("#proj-", "");
+    if (!id) return;
+    const el = document.getElementById(`proj-${id}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlight(id);
+      const t = setTimeout(() => setHighlight(null), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
   async function addProject() {
     const name = newProject.trim();
     if (!name) return;
@@ -38,10 +55,6 @@ export default function PlateClient({ userId }: { userId: string }) {
   async function completeTask(id: string) {
     await sb.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", id);
     setTasks((ts) => ts.filter((t) => t.id !== id));
-  }
-  async function finishProject(id: string) {
-    await sb.from("projects").update({ is_done: true }).eq("id", id);
-    load();
   }
 
   if (loading) return <div className="on-bg-soft">Loading…</div>;
@@ -60,28 +73,28 @@ export default function PlateClient({ userId }: { userId: string }) {
       {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
 
       {projects.map((p) => (
-        <ProjectCard key={p.id} project={p}
+        <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
           tasks={tasks.filter((t) => t.project_id === p.id)}
           onAddTask={(title) => addTask(p.id, title)}
-          onCompleteTask={completeTask}
-          onFinish={() => finishProject(p.id)} />
+          onCompleteTask={completeTask} />
       ))}
     </div>
   );
 }
 
 function ProjectCard({
-  project, tasks, onAddTask, onCompleteTask, onFinish,
+  project, tasks, onAddTask, onCompleteTask, highlighted,
 }: {
   project: Project;
   tasks: TaskItem[];
   onAddTask: (t: string) => void;
   onCompleteTask: (id: string) => void;
-  onFinish: () => void;
+  highlighted?: boolean;
 }) {
   const [t, setT] = useState("");
   return (
-    <div className="card p-5">
+    <div id={`proj-${project.id}`}
+      className={`card p-5 scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}>
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold flex-1">{project.name}</h2>
         <span className="text-sm text-ink-faint">importance {project.importance}/5</span>
@@ -102,7 +115,7 @@ function ProjectCard({
         <input className="input py-2" placeholder={copy.plate.addTask}
           value={t} onChange={(e) => setT(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { onAddTask(t); setT(""); } }} />
-        <button className="btn-quiet" onClick={() => onFinish()}>{copy.plate.finish}</button>
+        <Link className="btn-quiet whitespace-nowrap" href={`/chat?about=${encodeURIComponent(project.name)}`}>{copy.plate.addInfo}</Link>
       </div>
     </div>
   );
