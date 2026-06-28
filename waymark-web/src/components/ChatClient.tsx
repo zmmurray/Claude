@@ -118,7 +118,16 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
       <h1 className="font-display text-2xl mb-4 text-pine">{copy.chat.title}</h1>
 
       <div className="flex-1 space-y-3">
-        {messages.length === 0 && <div className="card p-5 text-ink-soft leading-relaxed">{copy.chat.intro}</div>}
+        {messages.length === 0 && (
+          <div className="card p-5 text-ink-soft leading-relaxed space-y-3">
+            <p>{copy.chat.intro}</p>
+            <ul className="space-y-1.5 text-sm text-ink-faint">
+              {copy.chat.tips.map((tip, i) => (
+                <li key={i} className="flex gap-2"><span className="text-sage-deep">•</span><span>{tip}</span></li>
+              ))}
+            </ul>
+          </div>
+        )}
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
             <div className={`max-w-[85%] px-4 py-3 rounded-2xl ${m.role === "user" ? "bg-moss text-white" : "card"}`}>

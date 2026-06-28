@@ -49,7 +49,11 @@ export const copy = {
 
   chat: {
     title: "Tell me more",
-    intro: "Let's set you up — talk to me like a person. To start with the big picture: what are you ultimately working toward? (For example: “leave my full-time job and build steady income from a lifestyle business.”) Then we'll walk through what's on your plate.",
+    intro: "Let's set you up — talk to me like a person. To start with the big picture: what are you ultimately working toward? Then we'll walk through what's on your plate.",
+    tips: [
+      "Prefer to talk it out? Use the microphone icon below.",
+      "Have an AI that already knows you? Ask it for a summary to copy and paste here.",
+    ],
     placeholder: "Type whatever's on your mind…",
     send: "Send",
     thinking: "Thinking…",
