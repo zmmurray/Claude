@@ -11,10 +11,9 @@ body {
   min-height: 100vh;
   color: #163832;
   background:
-    radial-gradient(900px 520px at 50% -8%, rgba(255,255,255,0.55), transparent 60%),
-    radial-gradient(700px 420px at 12% 18%, rgba(218,241,222,0.55), transparent 62%),
-    radial-gradient(820px 520px at 88% 30%, rgba(142,182,155,0.32), transparent 60%),
-    linear-gradient(180deg, #eef7f0 0%, #cfe7d4 34%, #6e977f 72%, #163832 100%);
+    radial-gradient(900px 520px at 50% -8%, rgba(255,255,255,0.6), transparent 60%),
+    radial-gradient(700px 420px at 12% 14%, rgba(232,247,235,0.6), transparent 62%),
+    linear-gradient(180deg, #f1f8f2 0%, #d3e9d8 28%, #6e977f 60%, #163832 84%, #051F20 100%);
   background-attachment: fixed;
 }
 
@@ -40,7 +39,7 @@ body::before {
     linear-gradient(180deg, rgba(247,251,248,0.62) 0%, rgba(247,251,248,0.10) 26%, rgba(247,251,248,0) 40%),
     url('https://images.unsplash.com/photo-1519681393784-d120267933ba?w=2400&q=85&auto=format&fit=crop')
       center 32% / cover no-repeat;
-  filter: grayscale(1) contrast(1.12) brightness(0.92);
+  filter: grayscale(1) contrast(1.05) brightness(1.12);
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0) 100%);
   mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0) 100%);
 }
@@ -54,8 +53,8 @@ body::after {
   z-index: -1;
   pointer-events: none;
   mix-blend-mode: multiply;
-  /* near-clear at the top (stays misty/light), deep pine through the ridges below */
-  background: linear-gradient(180deg, rgba(214,236,219,0.30) 0%, rgba(46,106,87,0.70) 38%, rgba(11,43,38,0.96) 72%, #051F20 100%);
+  /* light sage tint so the top stays bright & misty (on-palette, no foreign hues) */
+  background: linear-gradient(180deg, rgba(226,242,230,0.30) 0%, rgba(142,182,155,0.42) 45%, rgba(110,151,127,0.45) 100%);
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0) 100%);
   mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0.9) 50%, rgba(0,0,0,0) 100%);
 }
