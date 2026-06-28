@@ -87,7 +87,6 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={1}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
             placeholder={copy.chat.placeholder}
             className="input resize-none flex-1 overflow-hidden"
           />
