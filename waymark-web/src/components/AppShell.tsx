@@ -51,13 +51,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav className="fixed bottom-0 inset-x-0 z-20">
         <div className="mx-auto max-w-2xl px-6 pb-6 pt-2">
-          <div className="flex items-center justify-around rounded-full px-2 py-2.5 bg-white/55 border border-white/60 shadow-soft"
+          <div className="flex items-center justify-around rounded-full px-2 py-2.5 bg-white/75 border border-white/70 shadow-soft"
                style={{ WebkitBackdropFilter: "blur(20px)", backdropFilter: "blur(20px)" }}>
             {tabs.map((t) => {
               const active = path === t.href;
               return (
                 <Link key={t.href} href={t.href}
-                  className={`flex flex-col items-center gap-1 px-2 py-1 transition ${active ? "text-moss-deep" : "text-sage-deep/70"}`}>
+                  className={`flex flex-col items-center gap-1 px-2 py-1 transition ${active ? "text-pine" : "text-ink-soft"}`}>
                   {t.icon(active)}
                   <span className="text-[9px] uppercase tracking-[0.08em] font-semibold text-center leading-tight whitespace-nowrap">{t.label}</span>
                 </Link>

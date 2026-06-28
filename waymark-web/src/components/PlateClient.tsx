@@ -49,7 +49,7 @@ export default function PlateClient({ userId }: { userId: string }) {
   return (
     <div className="space-y-5">
       <div className="text-center mb-1">
-        <h1 className="font-display text-4xl tracking-[0.12em] text-pine uppercase">{copy.plate.title}</h1>
+        <h1 className="font-display text-2xl tracking-[0.18em] text-pine uppercase">{copy.plate.title}</h1>
         <div className="eyebrow mt-1">What matters most</div>
       </div>
 

@@ -74,7 +74,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 9rem)" }}>
-      <h1 className="font-display text-3xl mb-4 text-pine">{copy.chat.title}</h1>
+      <h1 className="font-display text-2xl mb-4 text-pine">{copy.chat.title}</h1>
 
       <div className="flex-1 space-y-3">
         {messages.length === 0 && <div className="card p-5 text-ink-soft leading-relaxed">{copy.chat.intro}</div>}

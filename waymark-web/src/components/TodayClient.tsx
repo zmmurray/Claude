@@ -139,7 +139,7 @@ export default function TodayClient({
     <div className="space-y-6">
       {/* Editorial header */}
       <div className="text-center">
-        <h1 className="font-display text-4xl tracking-[0.14em] text-pine">RIGHT NOW</h1>
+        <h1 className="font-display text-2xl tracking-[0.18em] text-pine">RIGHT NOW</h1>
         <div className="eyebrow mt-1">Focus your path</div>
       </div>
 
