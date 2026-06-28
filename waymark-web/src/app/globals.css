@@ -10,12 +10,12 @@ body {
   min-height: 100vh;
   color: #22382f;
   background:
-    radial-gradient(720px 540px at 10% 4%, rgba(110,180,148,0.50), transparent 60%),
-    radial-gradient(700px 540px at 92% 8%, rgba(240,198,120,0.50), transparent 60%),
-    radial-gradient(820px 640px at 84% 96%, rgba(120,150,210,0.40), transparent 62%),
-    radial-gradient(640px 560px at 4% 94%, rgba(90,176,166,0.38), transparent 60%),
-    radial-gradient(520px 460px at 50% 50%, rgba(255,244,224,0.35), transparent 65%),
-    linear-gradient(180deg, #eef4ec 0%, #e0e9e6 100%);
+    radial-gradient(720px 540px at 8% 2%, rgba(110,180,148,0.50), transparent 60%),
+    radial-gradient(720px 560px at 94% 6%, rgba(120,124,222,0.42), transparent 60%),
+    radial-gradient(820px 660px at 86% 98%, rgba(96,140,214,0.40), transparent 62%),
+    radial-gradient(660px 560px at 2% 96%, rgba(96,180,168,0.36), transparent 60%),
+    radial-gradient(560px 480px at 52% 46%, rgba(214,224,246,0.34), transparent 66%),
+    linear-gradient(180deg, #edf3ef 0%, #e2e8ee 100%);
   background-attachment: fixed;
 }
 

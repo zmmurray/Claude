@@ -8,8 +8,8 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 
 function kindMeta(kind: FocusItem["kind"]) {
   switch (kind) {
-    case "quick": return { label: "Quick win", hex: "#c08a35", dot: "bg-honey", text: "text-honey", bg: "bg-honey/10" };
-    case "admin": return { label: "Admin", hex: "#5f6fa6", dot: "bg-slateblue", text: "text-slateblue", bg: "bg-slateblue/10" };
+    case "quick": return { label: "Quick win", hex: "#5b5fc7", dot: "bg-iris", text: "text-iris-deep", bg: "bg-iris/10" };
+    case "admin": return { label: "Admin", hex: "#6b7a8e", dot: "bg-slateblue", text: "text-slateblue", bg: "bg-slateblue/10" };
     default:      return { label: "Moves the needle", hex: "#2e7d5b", dot: "bg-moss", text: "text-moss-deep", bg: "bg-moss/10" };
   }
 }
@@ -112,10 +112,24 @@ export default function TodayClient({
   // --- Onboarding ---
   if (!hasContext) {
     return (
-      <div className="card-strong p-8">
-        <h1 className="text-2xl font-semibold mb-2">{copy.today.emptyTitle}</h1>
-        <p className="text-ink-soft mb-6 leading-relaxed">{copy.today.emptyBody}</p>
-        <Link href="/chat" className="btn-primary">{copy.today.emptyCta}</Link>
+      <div className="min-h-[68vh] flex items-center justify-center">
+        <div className="card-strong p-9 max-w-lg w-full text-center">
+          <div className="mx-auto mb-5 h-16 w-16 rounded-full flex items-center justify-center text-3xl text-moss"
+               style={{ background: "radial-gradient(circle at 35% 30%, rgba(91,95,199,0.18), rgba(46,125,91,0.16))" }}>
+            ◆
+          </div>
+          <h1 className="text-[28px] font-semibold mb-3 leading-tight">{copy.today.emptyTitle}</h1>
+          <p className="text-ink-soft mb-7 leading-relaxed">{copy.today.emptyBody}</p>
+          <Link href="/chat" className="btn-primary">{copy.today.emptyCta}</Link>
+          <div className="mt-9 pt-6 border-t border-black/5">
+            <div className="text-xs uppercase tracking-wider text-ink-faint mb-3">Then I'll sort your day into</div>
+            <div className="flex flex-wrap justify-center gap-2">
+              <KindPill kind="needle" />
+              <KindPill kind="quick" />
+              <KindPill kind="admin" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
