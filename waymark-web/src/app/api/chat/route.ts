@@ -25,7 +25,8 @@ export async function POST(req: Request) {
 
   const ctx = await loadContext(supabase, user.id);
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const raw = await callModel(chatSystem(buildContext(ctx), today), turns, 1500);
+  const isNew = ctx.projects.length === 0;
+  const raw = await callModel(chatSystem(buildContext(ctx), today, isNew), turns, 1500);
   const ready = raw.includes("<<READY>>");
   const cleaned = raw.split("<<READY>>").join("").trim();
   const { text, update } = splitChatReply(cleaned);

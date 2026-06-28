@@ -49,7 +49,7 @@ export const copy = {
 
   chat: {
     title: "Let's talk it through",
-    intro: "Tell me what you're working on and what you're aiming for. I'll keep the big picture in mind and tell you where to focus. You can talk to me like a person.",
+    intro: "Let's set you up — talk to me like a person. To start with the big picture: what are you ultimately working toward? (For example: “leave my full-time job and build steady income from a lifestyle business.”) Then we'll walk through what's on your plate.",
     placeholder: "Type whatever's on your mind…",
     send: "Send",
     thinking: "Thinking…",

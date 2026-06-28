@@ -25,6 +25,11 @@ export async function applyUpdate(
 ): Promise<{ goals: number; projects: number; tasks: number }> {
   let goalCount = 0, projectCount = 0, taskCount = 0;
 
+  // Durable "about me" context that informs every future recommendation.
+  if (typeof update.context === "string" && update.context.trim()) {
+    await supabase.from("profiles").upsert({ id: userId, context: update.context.trim() });
+  }
+
   // Existing goals by lowercased name → id.
   const { data: existingGoals } = await supabase.from("goals").select("id,name").eq("user_id", userId);
   const goalIdByName = new Map<string, string>();

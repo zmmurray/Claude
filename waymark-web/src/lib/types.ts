@@ -51,6 +51,8 @@ export interface ChatMessage {
 
 /** Structured updates the strategist can apply to the user's world. */
 export interface ContextUpdate {
+  /** A concise running "about me": situation, life goals, constraints, what they're after. */
+  context?: string;
   goals?: { name: string; notes?: string }[];
   projects?: {
     name: string;
