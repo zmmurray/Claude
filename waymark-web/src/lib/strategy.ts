@@ -160,8 +160,10 @@ From the conversation — especially the user's most recent messages — output 
   Treat natural statements of intent as tasks: "I need to eat a snack in 2 min", "I have to call
   the bank", "I should email Sam", "gotta pick up milk" all become tracked tasks. Never decide
   something isn't "worth tracking."
-- Mark a task "urgent": true when it's time-sensitive or they want it now ("in 2 min", "before
-  noon", "today") — even small personal ones, so it can surface as the top Right now item.
+- Mark a task "urgent": true ONLY when the user wants it done imminently — a very short timeframe
+  like "in 2 minutes", "in the next hour", "right now". Do NOT mark things urgent for general
+  importance, "today", "this week", or future deadlines. Almost all tasks are NOT urgent; default
+  to false.
 - A standalone task that doesn't fit an existing project goes under a project named "Personal"
   (create it if it doesn't exist yet).
 - To UPDATE an existing project, use its EXACT name from above; add or adjust its tasks, set

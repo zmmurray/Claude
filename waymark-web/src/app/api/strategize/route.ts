@@ -30,6 +30,8 @@ export async function POST(req: Request) {
     const projName = (pid: string) => ctx.projects.find((p) => p.id === pid)?.name;
     const urgent = ctx.tasks
       .filter((t) => t.urgent)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)) // newest urgent first
+      .slice(0, 3)
       .map((t) => ({ title: t.title, why: "You wanted this done now.", kind: "quick" as const, project: projName(t.project_id) }));
     if (urgent.length) {
       const seen = new Set(urgent.map((i) => i.title.toLowerCase()));
@@ -43,6 +45,5 @@ export async function POST(req: Request) {
     .select("id")
     .single();
 
-  const debug = `urgentInCtx=${ctx.tasks.filter((t) => t.urgent).length} tasksInCtx=${ctx.tasks.length} itemsOut=${items.length} steer=${steer || "none"}`;
-  return NextResponse.json({ gist: parsed.gist, items, snapshotId: inserted?.id ?? null, debug });
+  return NextResponse.json({ gist: parsed.gist, items, snapshotId: inserted?.id ?? null });
 }

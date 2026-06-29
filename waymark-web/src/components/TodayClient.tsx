@@ -56,7 +56,7 @@ const Grip = () => (
 );
 
 type Mini = { id: string; name: string };
-type MiniTask = { id: string; title: string; project_id: string; urgent?: boolean };
+type MiniTask = { id: string; title: string; project_id: string; urgent?: boolean; created_at?: string };
 type Undo = { type: "done" | "skip"; item: FocusItem; index: number; taskId: string | null } | null;
 
 export default function TodayClient({
@@ -84,7 +84,6 @@ export default function TodayClient({
   const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
   const [pop, setPop] = useState(false); // brief celebration when a task is checked
-  const [dbg, setDbg] = useState(""); // temporary diagnostic
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
@@ -137,7 +136,6 @@ export default function TodayClient({
       setGist(data.gist ?? "");
       setItems(Array.isArray(data.items) ? data.items : []);
       setSnapshotId(data.snapshotId ?? null);
-      if (data.debug) setDbg(`api ${data.debug}`);
     } finally { setLoading(false); }
   }
 
@@ -146,7 +144,7 @@ export default function TodayClient({
   // and cleared the old focus), generate fresh focus so new/urgent tasks surface.
   useEffect(() => {
     const sb = createSupabaseBrowser();
-    sb.from("focus_snapshots").select("id,gist,items")
+    sb.from("focus_snapshots").select("id,gist,items,created_at")
       .order("created_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => {
         if (data) {
@@ -154,9 +152,10 @@ export default function TodayClient({
           setSnapshotId((data as any).id ?? null);
           setGist((data as any).gist ?? "");
           setItems(snapItems);
-          // If an urgent task isn't reflected in the focus, rebuild so it surfaces.
-          const titles = new Set(snapItems.map((i) => i.title.toLowerCase()));
-          if (tasks.some((t) => t.urgent && !titles.has(t.title.toLowerCase()))) strategize();
+          // Rebuild only if an urgent task is NEWER than this focus — so a just-added
+          // urgent task surfaces, without rebuilding on every visit.
+          const snapTime = (data as any).created_at ?? "";
+          if (tasks.some((t) => t.urgent && t.created_at && t.created_at > snapTime)) strategize();
         } else if (hasContext) {
           strategize();
         }
@@ -286,10 +285,6 @@ export default function TodayClient({
           </div>
         </div>
       )}
-
-      <div className="text-[10px] text-ink-faint/70 break-words leading-snug">
-        dbg urgentProp={tasks.filter((t) => t.urgent).length} items={items.length} · {dbg || "no api call yet"}
-      </div>
 
       {/* Header — date eyebrow + warm greeting title with a time-of-day icon */}
       <div>
