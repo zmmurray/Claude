@@ -39,6 +39,8 @@ export const copy = {
     markedDone: "Marked done.",
     skipped: "Skipped for now.",
     allDone: "That's everything I'd flag for now.",
+    jumpBackIn: "Jump back in",
+    resting: "Take your break.",
   },
 
   steer: {

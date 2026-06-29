@@ -44,11 +44,15 @@ export default function TodayClient({
   const [openTasks, setOpenTasks] = useState<MiniTask[]>(tasks);
   const [undo, setUndo] = useState<Undo>(null);
 
-  // Time-of-day greeting (set after mount to avoid an SSR/client time mismatch).
+  // Greeting + date (set after mount to avoid an SSR/client time mismatch).
   const [greeting, setGreeting] = useState("");
+  const [dateLabel, setDateLabel] = useState("");
+  const [resting, setResting] = useState(false);
   useEffect(() => {
-    const h = new Date().getHours();
+    const now = new Date();
+    const h = now.getHours();
     setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    setDateLabel(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
   }, []);
 
   // Drag to reorder focus items (works on touch via a touch-action:none handle).
@@ -77,6 +81,7 @@ export default function TodayClient({
 
   async function strategize(steer?: string) {
     setLoading(true); setFinished(null); setUndo(null);
+    setResting(steer === copy.steer.wiped);
     try {
       const res = await fetch("/api/strategize", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -199,10 +204,10 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
-      {/* Greeting + section heading */}
+      {/* Header — date eyebrow + warm greeting title */}
       <div>
-        {greeting && <div className="text-ink-soft mb-0.5">{greeting}.</div>}
-        <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">Right now</h1>
+        <div className="eyebrow">{dateLabel || "Today"}</div>
+        <h1 className="text-[28px] font-bold tracking-tight text-pine mt-1 leading-none">{greeting || "Today"}</h1>
       </div>
 
       {undoBar}
@@ -219,8 +224,13 @@ export default function TodayClient({
             </div>
           ) : (
             <div className="card-strong p-7 text-center">
-              <h2 className="font-display text-2xl mb-1 text-pine">Nothing pressing right now.</h2>
+              <h2 className="font-display text-2xl mb-1 text-pine">
+                {resting ? copy.today.resting : "Nothing pressing right now."}
+              </h2>
               <p className="text-ink-soft">{gist || "You're good — enjoy the quiet."}</p>
+              <button onClick={() => strategize()} disabled={loading} className="btn-primary mt-5">
+                {loading ? "One sec…" : copy.today.jumpBackIn}
+              </button>
             </div>
           )}
 
