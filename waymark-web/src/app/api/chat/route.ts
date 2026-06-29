@@ -34,9 +34,16 @@ export async function POST(req: Request) {
   const { text, update } = splitChatReply(cleaned);
 
   let changed = false;
+  let saved = "";
   if (update) {
     const counts = await applyUpdate(supabase, user.id, update);
-    changed = counts.goals + counts.projects + counts.tasks > 0;
+    changed = counts.names.length > 0 || counts.tasks > 0 || counts.goals > 0 || counts.context;
+    const parts: string[] = [];
+    if (counts.names.length) parts.push(counts.names.join(", "));
+    if (counts.tasks) parts.push(`${counts.tasks} to-do${counts.tasks > 1 ? "s" : ""}`);
+    saved = parts.length ? `Saved — ${parts.join(" · ")}` : counts.context ? "Noted." : "";
+    // Data changed → drop the old focus so Right Now regenerates fresh next visit.
+    if (changed) await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
   }
 
   const reply = text || "Got it.";
@@ -45,5 +52,5 @@ export async function POST(req: Request) {
     { user_id: user.id, role: "assistant", content: reply },
   ]);
 
-  return NextResponse.json({ reply, changed, ready });
+  return NextResponse.json({ reply, changed, ready, saved });
 }

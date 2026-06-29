@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { copy } from "@/lib/copy";
 import type { ChatMessage } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
@@ -9,7 +8,6 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 type Msg = { role: "user" | "assistant"; content: string };
 
 export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
-  const router = useRouter();
   const [messages, setMessages] = useState<Msg[]>(initial.map((m) => ({ role: m.role, content: m.content })));
 
   // Always reload saved history from the database on mount, so navigating back to
@@ -27,7 +25,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   }, []);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [savedNote, setSavedNote] = useState(false);
+  const [savedNote, setSavedNote] = useState("");
   const [updated, setUpdated] = useState(false);
   const [ready, setReady] = useState(false);
   const [going, setGoing] = useState(false);
@@ -112,7 +110,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
     if (!text || busy) return;
     setInput("");
     setMessages((m) => [...m, { role: "user", content: text }]);
-    setBusy(true); setSavedNote(false);
+    setBusy(true); setSavedNote("");
     try {
       const res = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -120,7 +118,8 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "…" }]);
-      if (data.changed) { setSavedNote(true); setUpdated(true); }
+      if (data.changed) setUpdated(true);
+      if (data.saved) setSavedNote(data.saved);
       if (data.ready) setReady(true);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Something glitched — say that again?" }]);
@@ -132,7 +131,8 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
     try {
       await fetch("/api/strategize", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     } catch {}
-    router.push("/today");
+    // Full reload so Right Now shows the freshly-generated focus, not a cached page.
+    window.location.assign("/today");
   }
 
   return (
@@ -164,7 +164,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
         )}
         {savedNote && (
           <div className="flex justify-start">
-            <div className="card px-4 py-2.5 text-sm text-moss">Saved that to your plate.</div>
+            <div className="card px-4 py-2.5 text-sm text-moss font-medium">{savedNote}</div>
           </div>
         )}
         <div ref={endRef} />

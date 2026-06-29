@@ -35,12 +35,14 @@ export async function applyUpdate(
   supabase: SupabaseClient,
   userId: string,
   update: ContextUpdate
-): Promise<{ goals: number; projects: number; tasks: number }> {
-  let goalCount = 0, projectCount = 0, taskCount = 0;
+): Promise<{ goals: number; projects: number; tasks: number; context: boolean; names: string[] }> {
+  let goalCount = 0, projectCount = 0, taskCount = 0, contextSaved = false;
+  const touched = new Set<string>(); // names of projects created or changed
 
   // Durable "about me" context that informs every future recommendation.
   if (typeof update.context === "string" && update.context.trim()) {
     await supabase.from("profiles").upsert({ id: userId, context: update.context.trim() });
+    contextSaved = true;
   }
 
   // Existing goals by lowercased name → id.
@@ -76,7 +78,10 @@ export async function applyUpdate(
       if (deadlineType) { patch.deadline_type = deadlineType; patch.deadline = deadlineType === "none" ? null : p.deadline ?? null; }
       if (goalId) patch.goal_id = goalId;
       if (p.notes && p.notes.trim()) patch.notes = existing.notes ? `${existing.notes}\n${p.notes.trim()}` : p.notes.trim();
-      if (Object.keys(patch).length) await supabase.from("projects").update(patch).eq("id", existing.id);
+      if (Object.keys(patch).length) {
+        await supabase.from("projects").update(patch).eq("id", existing.id);
+        touched.add(name);
+      }
       projectId = existing.id;
     } else {
       const { data: proj, error } = await supabase
@@ -91,6 +96,7 @@ export async function applyUpdate(
         .select("id").single();
       if (error || !proj) continue;
       projectCount++;
+      touched.add(name);
       projectId = proj.id;
       projByName.set(name.toLowerCase(), { id: proj.id, notes: p.notes ?? "" });
     }
@@ -106,8 +112,8 @@ export async function applyUpdate(
       const { error: te } = await supabase.from("tasks").insert({
         user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
       });
-      if (!te) { taskCount++; taskTitles.add(title.toLowerCase()); }
+      if (!te) { taskCount++; taskTitles.add(title.toLowerCase()); touched.add(name); }
     }
   }
-  return { goals: goalCount, projects: projectCount, tasks: taskCount };
+  return { goals: goalCount, projects: projectCount, tasks: taskCount, context: contextSaved, names: Array.from(touched) };
 }
