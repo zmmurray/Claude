@@ -156,8 +156,16 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
             </div>
           </div>
         ))}
-        {busy && <div className="text-sm on-bg-soft">{copy.chat.thinking}</div>}
-        {savedNote && <div className="text-sm on-bg-soft">Saved that to your plate.</div>}
+        {busy && (
+          <div className="flex justify-start">
+            <div className="card px-4 py-2.5 text-sm text-ink-soft">{copy.chat.thinking}</div>
+          </div>
+        )}
+        {savedNote && (
+          <div className="flex justify-start">
+            <div className="card px-4 py-2.5 text-sm text-moss">Saved that to your plate.</div>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 

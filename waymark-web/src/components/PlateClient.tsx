@@ -10,14 +10,17 @@ export default function PlateClient({ userId }: { userId: string }) {
   const sb = createSupabaseBrowser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+  const [summary, setSummary] = useState("");
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [{ data: p }, { data: t }] = await Promise.all([
+    const [{ data: p }, { data: t }, { data: snap }] = await Promise.all([
       sb.from("projects").select("*").eq("is_done", false).order("created_at"),
       sb.from("tasks").select("*").order("created_at"),
+      sb.from("focus_snapshots").select("gist").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
+    setSummary((snap?.gist as string) ?? "");
     // Collapse any accidental duplicate projects (same name) and to-dos
     // (same title within a project) so they show once.
     const seenP = new Set<string>();
@@ -86,6 +89,13 @@ export default function PlateClient({ userId }: { userId: string }) {
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
+
+      {summary && (
+        <div className="card p-4">
+          <div className="eyebrow mb-1.5">Priorities right now</div>
+          <p className="text-ink-soft text-sm leading-relaxed">{summary}</p>
+        </div>
+      )}
 
       <div className="card p-4 flex gap-2">
         <input className="input" placeholder={copy.plate.addProject}
@@ -185,7 +195,10 @@ function ProjectCard({
           value={t} onChange={(e) => setT(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { onAddTask(t); setT(""); } }} />
         <div className="flex gap-2">
-          <Link className="btn-quiet flex-1 text-center whitespace-nowrap" href={`/chat?about=${encodeURIComponent(project.name)}`}>{copy.plate.addInfo}</Link>
+          <Link className="btn-quiet flex-1 whitespace-nowrap" href={`/chat?about=${encodeURIComponent(project.name)}`}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3V7a2 2 0 012-2z" /></svg>
+            {copy.plate.addInfo}
+          </Link>
           <button className="btn-quiet whitespace-nowrap" onClick={onFinish}>{copy.plate.finish}</button>
         </div>
       </div>

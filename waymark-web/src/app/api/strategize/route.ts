@@ -6,6 +6,8 @@ import { callModel } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// The model call can take longer than Vercel's default 10s function limit.
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const supabase = createSupabaseServer();

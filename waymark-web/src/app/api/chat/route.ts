@@ -6,6 +6,8 @@ import { callModel, type ChatTurn } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// The model call can take longer than Vercel's default 10s function limit.
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const supabase = createSupabaseServer();
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
   const { text, update } = splitChatReply(cleaned);
 
   let changed = false;
-  if (update && (update.goals?.length || update.projects?.length)) {
+  if (update) {
     const counts = await applyUpdate(supabase, user.id, update);
     changed = counts.goals + counts.projects + counts.tasks > 0;
   }

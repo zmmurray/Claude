@@ -205,6 +205,7 @@ export default function TodayClient({
               <button onClick={(e) => { e.stopPropagation(); tellMore(hero); }}
                 className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium text-mint/90 transition hover:bg-white/10"
                 style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3V7a2 2 0 012-2z" /></svg>
                 {copy.today.discuss}
               </button>
               <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
