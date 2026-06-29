@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Goal, Project, TaskItem, ContextUpdate } from "./types";
 
+/** Normalize a name/title for matching: lowercase, punctuation → space, collapse. */
+export function norm(s: string): string {
+  return (s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
 /** Keep the first item for each key — collapses accidental duplicates. */
 function uniqueBy<T>(items: T[], key: (x: T) => string): T[] {
   const seen = new Set<string>();
@@ -25,8 +30,8 @@ export async function loadContext(supabase: SupabaseClient, userId: string) {
   return {
     profileContext: profile?.context ?? "",
     goals: (goals ?? []) as Goal[],
-    projects: uniqueBy((projects ?? []) as Project[], (p) => p.name.trim().toLowerCase()),
-    tasks: uniqueBy((tasks ?? []) as TaskItem[], (t) => `${t.project_id}::${t.title.trim().toLowerCase()}`),
+    projects: uniqueBy((projects ?? []) as Project[], (p) => norm(p.name)),
+    tasks: uniqueBy((tasks ?? []) as TaskItem[], (t) => `${t.project_id}::${norm(t.title)}`),
   };
 }
 
@@ -63,14 +68,14 @@ export async function applyUpdate(
   // swallow new tasks — a fresh, visible project gets created instead.
   const { data: existingProjects } = await supabase.from("projects").select("id,name,notes").eq("user_id", userId).eq("is_done", false);
   const projByName = new Map<string, { id: string; notes: string }>();
-  (existingProjects ?? []).forEach((p: any) => projByName.set(String(p.name).toLowerCase(), { id: p.id, notes: p.notes ?? "" }));
+  (existingProjects ?? []).forEach((p: any) => projByName.set(norm(p.name), { id: p.id, notes: p.notes ?? "" }));
 
   for (const p of update.projects ?? []) {
     const name = (p.name ?? "").trim();
     if (!name) continue;
     const goalId = p.goal ? goalIdByName.get(p.goal.toLowerCase()) ?? null : null;
     const deadlineType = ["none", "soft", "hard"].includes(p.deadlineType ?? "") ? p.deadlineType! : undefined;
-    const existing = projByName.get(name.toLowerCase());
+    const existing = projByName.get(norm(name));
     let projectId: string;
 
     if (existing) {
@@ -101,21 +106,21 @@ export async function applyUpdate(
       projectCount++;
       touched.add(name);
       projectId = proj.id;
-      projByName.set(name.toLowerCase(), { id: proj.id, notes: p.notes ?? "" });
+      projByName.set(norm(name), { id: proj.id, notes: p.notes ?? "" });
     }
 
-    // Existing to-do titles for this project, so we never re-add the same one.
+    // Existing to-do titles for this project (done or open), so we never re-add the same one.
     const { data: existingTasks } = await supabase.from("tasks").select("title").eq("project_id", projectId);
-    const taskTitles = new Set((existingTasks ?? []).map((t: any) => String(t.title).trim().toLowerCase()));
+    const taskTitles = new Set((existingTasks ?? []).map((t: any) => norm(String(t.title))));
 
     for (const t of p.tasks ?? []) {
       const title = (t.title ?? "").trim();
-      if (!title || taskTitles.has(title.toLowerCase())) continue;
+      if (!title || taskTitles.has(norm(title))) continue;
       const effort = ["quick", "medium", "deep"].includes(t.effort ?? "") ? t.effort! : "medium";
       const { error: te } = await supabase.from("tasks").insert({
         user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
       });
-      if (!te) { taskCount++; taskTitles.add(title.toLowerCase()); touched.add(name); }
+      if (!te) { taskCount++; taskTitles.add(norm(title)); touched.add(name); }
     }
   }
   return { goals: goalCount, projects: projectCount, tasks: taskCount, context: contextSaved, names: Array.from(touched) };

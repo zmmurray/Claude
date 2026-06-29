@@ -186,13 +186,17 @@ export default function TodayClient({
   }
 
   async function done(item: FocusItem, index: number) {
-    let taskId: string | null = null;
-    const match = matchTask(item);
-    if (match) {
-      taskId = match.id;
+    // Prefer the real linked task id; fall back to fuzzy matching for older items.
+    let taskId: string | null = item.taskId ?? null;
+    if (!taskId) {
+      const match = matchTask(item);
+      if (match) taskId = match.id;
+    }
+    if (taskId) {
+      const id = taskId;
       const sb = createSupabaseBrowser();
-      await sb.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", match.id);
-      setOpenTasks((ts) => ts.filter((t) => t.id !== match.id));
+      await sb.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", id);
+      setOpenTasks((ts) => ts.filter((t) => t.id !== id));
     }
     const remaining = items.filter((_, i) => i !== index);
     setItems(remaining);

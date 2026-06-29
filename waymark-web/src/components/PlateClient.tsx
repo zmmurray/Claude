@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { copy } from "@/lib/copy";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { norm } from "@/lib/data";
 import SummitCelebration from "./SummitCelebration";
 import type { Project, TaskItem } from "@/lib/types";
 
@@ -45,13 +46,13 @@ export default function PlateClient({ userId }: { userId: string }) {
     // (same title within a project) so they show once.
     const seenP = new Set<string>();
     const projs = ((p ?? []) as Project[]).filter((pr) => {
-      const k = pr.name.trim().toLowerCase();
+      const k = norm(pr.name);
       if (seenP.has(k)) return false;
       seenP.add(k); return true;
     });
     const seenT = new Set<string>();
     const tsks = ((t ?? []) as TaskItem[]).filter((tk) => {
-      const k = `${tk.project_id}::${tk.title.trim().toLowerCase()}`;
+      const k = `${tk.project_id}::${norm(tk.title)}`;
       if (seenT.has(k)) return false;
       seenT.add(k); return true;
     });

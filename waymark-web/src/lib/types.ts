@@ -32,7 +32,8 @@ export interface FocusItem {
   why: string;            // one-line rationale
   kind: "needle" | "quick" | "admin"; // needle-mover vs quick must-do vs admin
   project?: string;       // quest/project name for context
-  taskId?: string;        // links back to a task if applicable
+  taskId?: string;        // links back to a real task if applicable
+  ref?: string;           // transient: the short task ref the model returned (mapped to taskId)
 }
 
 export interface FocusSnapshot {

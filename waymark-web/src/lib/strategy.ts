@@ -43,8 +43,9 @@ You speak plainly, like a smart friend. The goal is a good life now, not after e
 is ticked — so when the important thing is handled, you tell them they're good and to stop.`;
 
 /** Prompt for producing the "Right now" focus. The model must return JSON. */
-export function focusPrompt(context: string, steer?: string, today?: string): string {
+export function focusPrompt(context: string, steer?: string, today?: string, taskList?: string): string {
   return `${today ? `Today is ${today}.\n` : ""}${context}
+${taskList ? `\nThe user's open tasks — when an item you pick IS one of these, set its "ref" to that task's id so the pages stay in sync:\n${taskList}\n` : ""}
 
 ${steer ? `The user just told you: "${steer}". Weigh this heavily — it changes the answer:
 - If they're WIPED / low on energy: rest comes FIRST. Lead by telling them it's okay to take
@@ -74,11 +75,15 @@ Ordering rules:
 If there's genuinely nothing pressing — or the user needs rest — return an empty items list
 and say so warmly in the gist.
 
+When an item is one of the open tasks listed above, set "ref" to that task's id (e.g. "t3") so
+checking it off here also completes it on the project. For a higher-level nudge not tied to a
+listed task, omit "ref".
+
 Return ONLY JSON in this shape (no prose, no code fences):
 {
   "gist": "one or two warm sentences on where things stand and the play right now",
   "items": [
-    { "title": "the concrete thing to do", "why": "one short, plain reason", "project": "which project it's part of" }
+    { "title": "the concrete thing to do", "why": "one short, plain reason", "project": "which project it's part of", "ref": "t3 (only if it's one of the listed tasks)" }
   ]
 }`;
 }
@@ -95,6 +100,7 @@ export function parseFocus(raw: string): { gist: string; items: FocusItem[] } | 
           why: String(i.why ?? "").trim(),
           kind: ["needle", "quick", "admin"].includes(i.kind) ? i.kind : "needle",
           project: i.project ? String(i.project) : undefined,
+          ref: i.ref ? String(i.ref).trim().split(/\s/)[0] : undefined,
         })).filter((i: FocusItem) => i.title)
       : [];
     return { gist: String(obj.gist ?? "").trim(), items };
