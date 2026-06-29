@@ -26,6 +26,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedNote, setSavedNote] = useState("");
+  const [debug, setDebug] = useState("");
   const [updated, setUpdated] = useState(false);
   const [ready, setReady] = useState(false);
   const [going, setGoing] = useState(false);
@@ -125,6 +126,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
       setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "…" }]);
       if (data.changed) setUpdated(true);
       if (data.saved) setSavedNote(data.saved);
+      if (data.debug) setDebug(data.debug);
       if (data.ready) setReady(true);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Something glitched — say that again?" }]);
@@ -175,6 +177,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
             <div className="card px-4 py-2.5 text-sm text-moss font-medium">{savedNote}</div>
           </div>
         )}
+        {debug && <div className="text-[10px] text-ink-faint/70 break-words leading-snug">{debug}</div>}
         <div ref={endRef} />
       </div>
 

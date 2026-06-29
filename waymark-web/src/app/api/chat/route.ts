@@ -46,16 +46,20 @@ export async function POST(req: Request) {
 
   let changed = false;
   let saved = "";
+  let applied = { goals: 0, projects: 0, tasks: 0, context: false, names: [] as string[] };
   if (update && (typeof update.context === "string" || update.goals?.length || update.projects?.length)) {
-    const counts = await applyUpdate(supabase, user.id, update);
-    changed = counts.names.length > 0 || counts.tasks > 0 || counts.goals > 0 || counts.context;
+    applied = await applyUpdate(supabase, user.id, update);
+    changed = applied.names.length > 0 || applied.tasks > 0 || applied.goals > 0 || applied.context;
     const parts: string[] = [];
-    if (counts.names.length) parts.push(counts.names.join(", "));
-    if (counts.tasks) parts.push(`${counts.tasks} to-do${counts.tasks > 1 ? "s" : ""}`);
-    saved = parts.length ? `Saved — ${parts.join(" · ")}` : counts.context ? "Noted." : "";
+    if (applied.names.length) parts.push(applied.names.join(", "));
+    if (applied.tasks) parts.push(`${applied.tasks} to-do${applied.tasks > 1 ? "s" : ""}`);
+    saved = parts.length ? `Saved — ${parts.join(" · ")}` : applied.context ? "Noted." : "";
     // Data changed → drop the old focus so Right Now regenerates fresh next visit.
     if (changed) await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
   }
+
+  // Temporary diagnostic so we can see what the extraction step actually did.
+  const debug = `proj=${applied.projects} tasks=${applied.tasks} names=[${applied.names.join(", ")}] · raw=${(extractRaw || "").replace(/\s+/g, " ").slice(0, 240)}`;
 
   const reply = text || "Got it.";
   await supabase.from("chat_messages").insert([
@@ -63,5 +67,5 @@ export async function POST(req: Request) {
     { user_id: user.id, role: "assistant", content: reply },
   ]);
 
-  return NextResponse.json({ reply, changed, ready, saved });
+  return NextResponse.json({ reply, changed, ready, saved, debug });
 }

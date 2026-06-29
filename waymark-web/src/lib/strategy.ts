@@ -154,8 +154,10 @@ The user's current world:
 ${context}
 
 From the conversation — especially the user's most recent messages — output what should be saved:
-- Capture EVERY task the user wants tracked — even tiny or trivial ones ("eat a snack in 5 min",
-  "text mom"). Never decide something isn't "worth tracking." If they mention a to-do, record it.
+- Capture EVERY task the user mentions — even tiny ones, and even when they DON'T say "add this."
+  Treat natural statements of intent as tasks: "I need to eat a snack in 2 min", "I have to call
+  the bank", "I should email Sam", "gotta pick up milk" all become tracked tasks. Never decide
+  something isn't "worth tracking."
 - Mark a task "urgent": true when it's time-sensitive or they want it now ("in 2 min", "before
   noon", "today") — even small personal ones, so it can surface as the top Right now item.
 - A standalone task that doesn't fit an existing project goes under a project named "Personal"
@@ -171,6 +173,10 @@ From the conversation — especially the user's most recent messages — output 
 
 Deadlines: "hard" only for firm dates; hedged timing → "soft" using the later end; else "none".
 Convert to YYYY-MM-DD using today's date.
+
+Example — if the user says "I need to eat a snack in two minutes" (note: not an explicit "add
+this" — still a task), output exactly:
+{"projects":[{"name":"Personal","importance":2,"tasks":[{"title":"Eat a snack","urgent":true}]}]}
 
 Output ONLY JSON (no prose, no code fences). If nothing should change, output exactly {}.
 {
