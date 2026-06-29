@@ -57,6 +57,7 @@ export const copy = {
     send: "Send",
     thinking: "Thinking…",
     ready: "Show me what to focus on",
+    seeChanges: "See what changed",
   },
 
   plate: {

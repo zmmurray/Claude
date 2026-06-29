@@ -28,6 +28,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedNote, setSavedNote] = useState(false);
+  const [updated, setUpdated] = useState(false);
   const [ready, setReady] = useState(false);
   const [going, setGoing] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -119,7 +120,7 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
       });
       const data = await res.json();
       setMessages((m) => [...m, { role: "assistant", content: data.reply ?? "…" }]);
-      if (data.changed) setSavedNote(true);
+      if (data.changed) { setSavedNote(true); setUpdated(true); }
       if (data.ready) setReady(true);
     } catch {
       setMessages((m) => [...m, { role: "assistant", content: "Something glitched — say that again?" }]);
@@ -170,9 +171,9 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
       </div>
 
       <div className="sticky bottom-24 pt-3 space-y-3">
-        {ready && (
+        {(ready || updated) && (
           <button onClick={goToFocus} disabled={going} className="btn-primary w-full">
-            {going ? "One sec…" : copy.chat.ready} →
+            {going ? "One sec…" : ready ? copy.chat.ready : copy.chat.seeChanges} →
           </button>
         )}
         {listening && <div className="text-sm text-clay text-center">Listening… talk away, tap the mic to stop.</div>}

@@ -145,6 +145,10 @@ function ProjectCard({
         <span className="text-sm text-ink-faint">importance {project.importance}/5</span>
       </div>
 
+      {project.notes?.trim() && (
+        <p className="text-sm text-ink-soft mt-1.5 whitespace-pre-line leading-relaxed">{project.notes.trim()}</p>
+      )}
+
       {/* Progress toward done */}
       {total > 0 && (
         <div className="mt-3">

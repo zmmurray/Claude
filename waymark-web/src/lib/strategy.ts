@@ -162,6 +162,16 @@ Include only what's new or changed. "context" is REPLACED each time, so keep it 
 complete — it shapes every future recommendation, so put their real priorities there (e.g. that
 income-generating work matters most right now while they're trying to leave their job).
 
+If your reply implies ANY change to their world — you said "got it," "noted," "flagging it,"
+"organizing," "setting that up," "I'll record that" — the <<UPDATE>> block MUST be in that SAME
+reply, or you have NOT actually done it. There is no doing it afterwards. Use each project's EXACT
+existing name so you update it instead of creating a duplicate.
+
+Worked example — the user says: "Imaginae's contact Steve left the company; James will reach out;
+I followed Steve on IG like he asked." You give your short take, then END the reply with:
+<<UPDATE>>
+{"projects":[{"name":"Imaginae","notes":"Steve (main contact) left the company — blocked until James reaches out. Followed Steve on IG to keep the relationship warm.","tasks":[{"title":"Wait for James to reach out (can't push forward until then)","urgent":false}]}]}
+
 Deadlines — never invent false precision:
 - "hard" ONLY for clearly firm dates ("hard deadline", "due Friday at 5", "must submit by the 14th").
 - Fuzzy/hedged timing ("tomorrow or the next day", "around Friday", "soon") → "soft", using the
