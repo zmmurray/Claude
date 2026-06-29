@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { copy } from "@/lib/copy";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import SummitCelebration from "./SummitCelebration";
 import type { Project, TaskItem } from "@/lib/types";
 
 // Priority → shade. Darker green = higher priority; same importance = same shade.
@@ -31,6 +32,7 @@ export default function PlateClient({ userId }: { userId: string }) {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [showAllPri, setShowAllPri] = useState(false);
   const [reason, setReason] = useState("");
+  const [celebrate, setCelebrate] = useState<string | null>(null);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -121,8 +123,10 @@ export default function PlateClient({ userId }: { userId: string }) {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: false, completed_at: null } : t)));
   }
   async function finishProject(id: string, name: string) {
-    if (!window.confirm(`Close out “${name}”? It'll move off your list.`)) return;
+    if (!window.confirm(`Mark “${name}” done? It'll move off your list.`)) return;
     await sb.from("projects").update({ is_done: true }).eq("id", id);
+    setCelebrate(name);
+    setTimeout(() => setCelebrate(null), 3200);
     load();
   }
 
@@ -141,6 +145,18 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-5">
+      {celebrate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          onClick={() => setCelebrate(null)}
+          style={{ background: "rgba(5,31,32,0.4)", WebkitBackdropFilter: "blur(4px)", backdropFilter: "blur(4px)" }}>
+          <div className="card-strong p-8 text-center max-w-sm w-full">
+            <SummitCelebration />
+            <h2 className="font-display text-2xl text-pine mb-1">Nice — done!</h2>
+            <p className="text-ink-soft">“{celebrate}” is wrapped. One less thing to carry.</p>
+          </div>
+        </div>
+      )}
+
       <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
 
       {ranked.length > 0 && (
