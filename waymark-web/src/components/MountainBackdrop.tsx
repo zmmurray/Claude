@@ -1,8 +1,16 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 // Misty mountain header — a real photo (bright fog up top, pine forest below),
 // pinned to the top and dissolving into the page's green gradient. A whisper of
 // sage is laid over it to keep everything in the brand palette, and a soft pale
 // wash up top keeps the wordmark + heading legible.
 export default function MountainBackdrop() {
+  // The chat page uses its own calm light gradient instead of the photo.
+  const pathname = usePathname();
+  if (pathname === "/chat") return null;
+
   return (
     <div
       aria-hidden

@@ -142,6 +142,9 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "calc(100vh - 9rem)" }}>
+      {/* Calm light gradient backdrop for the chat (no photo here). */}
+      <div aria-hidden className="fixed inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #f4faf5 0%, #e8f3eb 50%, #d9edde 100%)" }} />
       <h1 className="font-display text-2xl mb-4 text-pine">{copy.chat.title}</h1>
 
       <div className="flex-1 space-y-3">
