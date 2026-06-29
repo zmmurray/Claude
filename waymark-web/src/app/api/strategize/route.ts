@@ -43,5 +43,6 @@ export async function POST(req: Request) {
     .select("id")
     .single();
 
-  return NextResponse.json({ gist: parsed.gist, items, snapshotId: inserted?.id ?? null });
+  const debug = `urgentInCtx=${ctx.tasks.filter((t) => t.urgent).length} tasksInCtx=${ctx.tasks.length} itemsOut=${items.length} steer=${steer || "none"}`;
+  return NextResponse.json({ gist: parsed.gist, items, snapshotId: inserted?.id ?? null, debug });
 }

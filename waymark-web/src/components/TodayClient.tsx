@@ -84,6 +84,7 @@ export default function TodayClient({
   const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
   const [pop, setPop] = useState(false); // brief celebration when a task is checked
+  const [dbg, setDbg] = useState(""); // temporary diagnostic
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
@@ -136,6 +137,7 @@ export default function TodayClient({
       setGist(data.gist ?? "");
       setItems(Array.isArray(data.items) ? data.items : []);
       setSnapshotId(data.snapshotId ?? null);
+      if (data.debug) setDbg(`api ${data.debug}`);
     } finally { setLoading(false); }
   }
 
@@ -199,11 +201,13 @@ export default function TodayClient({
   }
 
   function skip(item: FocusItem, index: number) {
-    const remaining = items.filter((_, i) => i !== index);
-    setItems(remaining);
-    persist(remaining);
-    setUndo({ type: "skip", item, index, taskId: null });
-    if (remaining.length === 0) setFinished("skip");
+    // "Not now" demotes the item to the bottom of Next up instead of dismissing it.
+    setItems((cur) => {
+      const next = cur.filter((_, i) => i !== index);
+      next.push(item);
+      persist(next);
+      return next;
+    });
   }
 
   async function doUndo() {
@@ -282,6 +286,10 @@ export default function TodayClient({
           </div>
         </div>
       )}
+
+      <div className="text-[10px] text-ink-faint/70 break-words leading-snug">
+        dbg urgentProp={tasks.filter((t) => t.urgent).length} items={items.length} · {dbg || "no api call yet"}
+      </div>
 
       {/* Header — date eyebrow + warm greeting title with a time-of-day icon */}
       <div>
