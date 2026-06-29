@@ -49,7 +49,7 @@ export const copy = {
 
   chat: {
     title: "Tell me more",
-    intro: "Let's set you up — talk to me like a person. To start with the big picture: what are you ultimately working toward? Then we'll walk through what's on your plate.",
+    intro: "Let's set you up — just talk to me like a person. Brain-dump whatever's on your plate: big goals, half-formed ideas, little to-dos, the stuff nagging at you — in any order, no structure needed. Whether it's one big goal with no plan yet or just a handful of little tasks, I've got it. Dump it all here and I'll sort it into a plan and tell you where to start.",
     tips: [
       "Have an AI that already knows you? Ask it for a summary to copy and paste here.",
     ],
