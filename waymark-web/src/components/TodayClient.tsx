@@ -260,8 +260,20 @@ export default function TodayClient({
       </div>
 
       {undoBar}
-      {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
+      {!resting && gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
+      {resting && (
+        <div className="card-strong p-8 text-center">
+          <div className="text-3xl mb-2">🌿</div>
+          <h2 className="font-display text-2xl mb-1 text-pine">{copy.today.resting}</h2>
+          <p className="text-ink-soft mb-5">{gist || "Rest first — it'll keep."}</p>
+          <button onClick={() => strategize()} disabled={loading} className="btn-primary">
+            {loading ? "One sec…" : copy.today.jumpBackIn}
+          </button>
+        </div>
+      )}
+
+      {!resting && (
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it) => it.title)} strategy={verticalListSortingStrategy}>
           {hero ? (
@@ -294,6 +306,7 @@ export default function TodayClient({
           )}
         </SortableContext>
       </DndContext>
+      )}
 
       <div className="card p-4">
         <div className="eyebrow mb-2.5">{copy.steer.prompt}</div>

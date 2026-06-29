@@ -58,14 +58,11 @@ export async function POST(req: Request) {
     if (changed) await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
   }
 
-  // Temporary diagnostic so we can see what the extraction step actually did.
-  const debug = `proj=${applied.projects} tasks=${applied.tasks} names=[${applied.names.join(", ")}] · raw=${(extractRaw || "").replace(/\s+/g, " ").slice(0, 240)}`;
-
   const reply = text || "Got it.";
   await supabase.from("chat_messages").insert([
     { user_id: user.id, role: "user", content: message },
     { user_id: user.id, role: "assistant", content: reply },
   ]);
 
-  return NextResponse.json({ reply, changed, ready, saved, debug });
+  return NextResponse.json({ reply, changed, ready, saved });
 }
