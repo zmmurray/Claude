@@ -13,6 +13,8 @@ import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 
+const POP_WORDS = ["Nice!", "Boom!", "Done!", "Yes!", "Crushed it.", "Nailed it.", "One down!"];
+
 const ENCOURAGEMENTS = [
   "You got this.", "One step at a time.", "Let's make it count.", "Steady wins it.",
   "Small steps, real progress.", "Here we go.", "You're on your way.", "Make it a good one.",
@@ -84,6 +86,7 @@ export default function TodayClient({
   const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
   const [pop, setPop] = useState(false); // brief celebration when a task is checked
+  const [popWord, setPopWord] = useState("Nice!");
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
@@ -196,7 +199,11 @@ export default function TodayClient({
     persist(remaining);
     setUndo({ type: "done", item, index, taskId });
     if (remaining.length === 0) setFinished("done");
-    else { setPop(true); setTimeout(() => setPop(false), 1100); }
+    else {
+      setPopWord(POP_WORDS[Math.floor(Math.random() * POP_WORDS.length)]);
+      setPop(true);
+      setTimeout(() => setPop(false), 1350);
+    }
   }
 
   function skip(item: FocusItem, index: number) {
@@ -273,15 +280,29 @@ export default function TodayClient({
     <div className="space-y-6">
       {pop && (
         <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
-          <div className="task-pop relative">
-            <div className="h-20 w-20 rounded-full flex items-center justify-center shadow-lift"
+          <div className="relative flex flex-col items-center">
+            {/* confetti burst from the check */}
+            {Array.from({ length: 16 }).map((_, i) => {
+              const ang = (i / 16) * Math.PI * 2;
+              const r = 64 + (i % 3) * 22;
+              const colors = ["#235347", "#8EB69B", "#DAF1DE", "#6e977f", "#bfe0c8"];
+              const size = i % 2 ? 9 : 6;
+              return (
+                <span key={i} className="confetti absolute rounded-full"
+                  style={{
+                    top: "40px", left: "calc(50% - 4px)", height: `${size}px`, width: `${size}px`,
+                    background: colors[i % colors.length],
+                    ["--tx" as any]: `${Math.cos(ang) * r}px`,
+                    ["--ty" as any]: `${Math.sin(ang) * r}px`,
+                    animationDelay: `${(i % 5) * 20}ms`,
+                  }} />
+              );
+            })}
+            <div className="task-pop h-[88px] w-[88px] rounded-full flex items-center justify-center shadow-lift"
                  style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)" }}>
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2B26" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0B2B26" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
             </div>
-            <span className="summit-spark absolute -top-1 -left-1 h-2 w-2 rounded-full bg-moss" style={{ animationDelay: "0.05s" }} />
-            <span className="summit-spark absolute -top-2 right-2 h-1.5 w-1.5 rounded-full bg-sage-deep" style={{ animationDelay: "0.18s" }} />
-            <span className="summit-spark absolute bottom-0 -right-2 h-2 w-2 rounded-full bg-moss" style={{ animationDelay: "0.12s" }} />
-            <span className="summit-spark absolute -bottom-1 left-1 h-1.5 w-1.5 rounded-full bg-sage-deep" style={{ animationDelay: "0.24s" }} />
+            <div className="word-pop mt-3 text-xl font-bold text-pine">{popWord}</div>
           </div>
         </div>
       )}
