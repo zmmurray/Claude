@@ -61,9 +61,11 @@ truly must happen first, then the highest-leverage work toward their goals. Keep
 SHORT (1–4 items) — overwhelm is failure.
 
 Ordering rules:
-- Small personal or quick tasks count too. If something is time-sensitive or the user clearly
-  wants it done now (e.g. "eat a snack in 2 min", a call before noon, an urgent to-do), it can be
-  the TOP item — never skip or demote a task just for being tiny, quick, or "just personal."
+- Anything marked URGENT is time-sensitive — lead with it. A task the user wants done imminently
+  (a short timeframe like "in 2 min", "right now", "before noon") is the SINGLE most time-sensitive
+  thing and goes FIRST — above important long-horizon work and deadlines that are days out. They
+  told you to do it now; honor that. Never skip or demote a task for being tiny, quick, or "just
+  personal." If a tiny urgent task is #1, that's correct.
 - A project with a SOONER deadline should generally rank ABOVE one with a later deadline or
   no deadline, unless the deadline-free one is clearly far more important.
 - If a note implies a time-based follow-up is due (e.g. "emailed the lead a week ago"),
