@@ -1,6 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Goal, Project, TaskItem, ContextUpdate } from "./types";
 
+/** Keep the first item for each key — collapses accidental duplicates. */
+function uniqueBy<T>(items: T[], key: (x: T) => string): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const it of items) {
+    const k = key(it);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  return out;
+}
+
 /** Load everything the strategist needs for a user. */
 export async function loadContext(supabase: SupabaseClient, userId: string) {
   const [{ data: profile }, { data: goals }, { data: projects }, { data: tasks }] = await Promise.all([
@@ -12,8 +25,8 @@ export async function loadContext(supabase: SupabaseClient, userId: string) {
   return {
     profileContext: profile?.context ?? "",
     goals: (goals ?? []) as Goal[],
-    projects: (projects ?? []) as Project[],
-    tasks: (tasks ?? []) as TaskItem[],
+    projects: uniqueBy((projects ?? []) as Project[], (p) => p.name.trim().toLowerCase()),
+    tasks: uniqueBy((tasks ?? []) as TaskItem[], (t) => `${t.project_id}::${t.title.trim().toLowerCase()}`),
   };
 }
 
@@ -82,14 +95,18 @@ export async function applyUpdate(
       projByName.set(name.toLowerCase(), { id: proj.id, notes: p.notes ?? "" });
     }
 
+    // Existing to-do titles for this project, so we never re-add the same one.
+    const { data: existingTasks } = await supabase.from("tasks").select("title").eq("project_id", projectId);
+    const taskTitles = new Set((existingTasks ?? []).map((t: any) => String(t.title).trim().toLowerCase()));
+
     for (const t of p.tasks ?? []) {
       const title = (t.title ?? "").trim();
-      if (!title) continue;
+      if (!title || taskTitles.has(title.toLowerCase())) continue;
       const effort = ["quick", "medium", "deep"].includes(t.effort ?? "") ? t.effort! : "medium";
       const { error: te } = await supabase.from("tasks").insert({
         user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
       });
-      if (!te) taskCount++;
+      if (!te) { taskCount++; taskTitles.add(title.toLowerCase()); }
     }
   }
   return { goals: goalCount, projects: projectCount, tasks: taskCount };

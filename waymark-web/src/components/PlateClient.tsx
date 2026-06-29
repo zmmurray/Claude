@@ -18,8 +18,22 @@ export default function PlateClient({ userId }: { userId: string }) {
       sb.from("projects").select("*").eq("is_done", false).order("created_at"),
       sb.from("tasks").select("*").order("created_at"),
     ]);
-    setProjects((p ?? []) as Project[]);
-    setTasks((t ?? []) as TaskItem[]);
+    // Collapse any accidental duplicate projects (same name) and to-dos
+    // (same title within a project) so they show once.
+    const seenP = new Set<string>();
+    const projs = ((p ?? []) as Project[]).filter((pr) => {
+      const k = pr.name.trim().toLowerCase();
+      if (seenP.has(k)) return false;
+      seenP.add(k); return true;
+    });
+    const seenT = new Set<string>();
+    const tsks = ((t ?? []) as TaskItem[]).filter((tk) => {
+      const k = `${tk.project_id}::${tk.title.trim().toLowerCase()}`;
+      if (seenT.has(k)) return false;
+      seenT.add(k); return true;
+    });
+    setProjects(projs);
+    setTasks(tsks);
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
