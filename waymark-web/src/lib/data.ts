@@ -58,8 +58,10 @@ export async function applyUpdate(
     if (!error && data) { goalIdByName.set(name.toLowerCase(), data.id); goalCount++; }
   }
 
-  // Existing projects by lowercased name → { id, notes }.
-  const { data: existingProjects } = await supabase.from("projects").select("id,name,notes").eq("user_id", userId);
+  // Existing ACTIVE projects by lowercased name → { id, notes }. We deliberately
+  // skip done projects so a finished/hidden one (e.g. an old "Personal") can't
+  // swallow new tasks — a fresh, visible project gets created instead.
+  const { data: existingProjects } = await supabase.from("projects").select("id,name,notes").eq("user_id", userId).eq("is_done", false);
   const projByName = new Map<string, { id: string; notes: string }>();
   (existingProjects ?? []).forEach((p: any) => projByName.set(String(p.name).toLowerCase(), { id: p.id, notes: p.notes ?? "" }));
 
