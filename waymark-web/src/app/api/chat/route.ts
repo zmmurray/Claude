@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import { loadContext, applyUpdate } from "@/lib/data";
-import { buildContext, chatSystem, splitChatReply } from "@/lib/strategy";
-import { callModel, type ChatTurn } from "@/lib/llm";
+import { buildContext, chatSystem, splitChatReply, extractUpdatePrompt } from "@/lib/strategy";
+import { callModel, extractJSON, type ChatTurn } from "@/lib/llm";
+import type { ContextUpdate } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,16 +27,26 @@ export async function POST(req: Request) {
   turns.push({ role: "user", content: message });
 
   const ctx = await loadContext(supabase, user.id);
+  const contextText = buildContext(ctx);
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const isNew = ctx.projects.length === 0;
-  const raw = await callModel(chatSystem(buildContext(ctx), today, isNew), turns, 1500);
+
+  // Two passes in parallel: the conversational reply, and a dedicated extraction
+  // that pulls structured updates out of the conversation (so saving never depends
+  // on the chat model remembering to emit anything).
+  const [raw, extractRaw] = await Promise.all([
+    callModel(chatSystem(contextText, today, isNew), turns, 1500),
+    callModel(extractUpdatePrompt(contextText, today), turns, 1000),
+  ]);
+
   const ready = raw.includes("<<READY>>");
   const cleaned = raw.split("<<READY>>").join("").trim();
-  const { text, update } = splitChatReply(cleaned);
+  const { text } = splitChatReply(cleaned);
+  const update = extractJSON<ContextUpdate>(extractRaw);
 
   let changed = false;
   let saved = "";
-  if (update) {
+  if (update && (typeof update.context === "string" || update.goals?.length || update.projects?.length)) {
     const counts = await applyUpdate(supabase, user.id, update);
     changed = counts.names.length > 0 || counts.tasks > 0 || counts.goals > 0 || counts.context;
     const parts: string[] = [];
