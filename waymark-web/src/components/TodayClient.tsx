@@ -13,6 +13,35 @@ import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 
+// Time-of-day glyph: rising half-sun (morning), full sun (afternoon), setting half-sun (evening).
+const PhaseIcon = ({ phase }: { phase: "morning" | "afternoon" | "evening" }) => {
+  const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "#6e977f", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (phase === "afternoon") {
+    return (
+      <svg {...common} aria-hidden>
+        <circle cx="12" cy="12" r="4.5" />
+        <line x1="12" y1="2" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="22" />
+        <line x1="4.2" y1="4.2" x2="5.6" y2="5.6" /><line x1="18.4" y1="18.4" x2="19.8" y2="19.8" />
+        <line x1="2" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="22" y2="12" />
+        <line x1="4.2" y1="19.8" x2="5.6" y2="18.4" /><line x1="18.4" y1="5.6" x2="19.8" y2="4.2" />
+      </svg>
+    );
+  }
+  // morning = arrow up (rising); evening = arrow down (setting)
+  const arrow = phase === "morning" ? "8 6 12 2 16 6" : "8 5 12 9 16 5";
+  const stem = phase === "morning" ? { y1: 2, y2: 9 } : { y1: 9, y2: 2 };
+  return (
+    <svg {...common} aria-hidden>
+      <path d="M17 18a5 5 0 0 0-10 0" />
+      <line x1="12" y1={stem.y1} x2="12" y2={stem.y2} />
+      <line x1="3.5" y1="18" x2="5.5" y2="18" /><line x1="18.5" y1="18" x2="20.5" y2="18" />
+      <line x1="5" y1="10.5" x2="6.4" y2="11.9" /><line x1="17.6" y1="11.9" x2="19" y2="10.5" />
+      <line x1="22" y1="22" x2="2" y2="22" />
+      <polyline points={arrow} />
+    </svg>
+  );
+};
+
 const Grip = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
     <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
@@ -47,11 +76,14 @@ export default function TodayClient({
   // Greeting + date (set after mount to avoid an SSR/client time mismatch).
   const [greeting, setGreeting] = useState("");
   const [dateLabel, setDateLabel] = useState("");
+  const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
-    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+    const p = h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
+    setPhase(p);
+    setGreeting(p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : "Good evening");
     setDateLabel(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
   }, []);
 
@@ -204,10 +236,13 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
-      {/* Header — date eyebrow + warm greeting title */}
+      {/* Header — date eyebrow + warm greeting title with a time-of-day icon */}
       <div>
         <div className="eyebrow">{dateLabel || "Today"}</div>
-        <h1 className="text-[28px] font-bold tracking-tight text-pine mt-1 leading-none">{greeting || "Today"}</h1>
+        <h1 className="text-[28px] font-bold tracking-tight text-pine mt-1 leading-none flex items-center gap-2.5">
+          {greeting || "Today"}
+          {phase && <PhaseIcon phase={phase} />}
+        </h1>
       </div>
 
       {undoBar}
