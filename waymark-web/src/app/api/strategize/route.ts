@@ -30,8 +30,8 @@ export async function POST(req: Request) {
     const projName = (pid: string) => ctx.projects.find((p) => p.id === pid)?.name;
     const urgent = ctx.tasks
       .filter((t) => t.urgent)
-      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)) // newest urgent first
-      .slice(0, 3)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1)) // in the order they were added
+      .slice(0, 4)
       .map((t) => ({ title: t.title, why: "You wanted this done now.", kind: "quick" as const, project: projName(t.project_id) }));
     if (urgent.length) {
       const seen = new Set(urgent.map((i) => i.title.toLowerCase()));

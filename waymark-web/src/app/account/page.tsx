@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServer } from "@/lib/supabase/server";
 import AppShell from "@/components/AppShell";
+import AccountTools from "@/components/AccountTools";
 import { copy } from "@/lib/copy";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,8 @@ export default async function AccountPage() {
         <form action="/auth/signout" method="post">
           <button type="submit" className="btn-quiet">{copy.account.signOut}</button>
         </form>
-        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-29-ab</p>
+        <AccountTools />
+        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-29-ac</p>
       </div>
     </AppShell>
   );
