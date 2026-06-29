@@ -6,21 +6,29 @@ import { copy } from "@/lib/copy";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import type { Project, TaskItem } from "@/lib/types";
 
+// Priority → shade. Darker green = higher priority; same importance = same shade.
+function priorityShade(importance: number): string {
+  switch (Math.min(5, Math.max(1, Math.round(importance)))) {
+    case 5: return "#0B2B26";
+    case 4: return "#235347";
+    case 3: return "#6e977f";
+    case 2: return "#8EB69B";
+    default: return "#c3dcc9";
+  }
+}
+
 export default function PlateClient({ userId }: { userId: string }) {
   const sb = createSupabaseBrowser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [summary, setSummary] = useState("");
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [{ data: p }, { data: t }, { data: snap }] = await Promise.all([
+    const [{ data: p }, { data: t }] = await Promise.all([
       sb.from("projects").select("*").eq("is_done", false).order("created_at"),
       sb.from("tasks").select("*").order("created_at"),
-      sb.from("focus_snapshots").select("gist").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setSummary((snap?.gist as string) ?? "");
     // Collapse any accidental duplicate projects (same name) and to-dos
     // (same title within a project) so they show once.
     const seenP = new Set<string>();
@@ -84,16 +92,44 @@ export default function PlateClient({ userId }: { userId: string }) {
     load();
   }
 
+  // Tap a priority row to scroll to that project and flash it.
+  function jumpTo(id: string) {
+    const el = document.getElementById(`proj-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlight(id);
+    setTimeout(() => setHighlight(null), 2000);
+  }
+
   if (loading) return <div className="on-bg-soft">Loading…</div>;
+
+  // Ranked by importance (desc), then sooner deadline first.
+  const ranked = [...projects].sort((a, b) => {
+    if (b.importance !== a.importance) return b.importance - a.importance;
+    const ad = a.deadline_type !== "none" && a.deadline ? a.deadline : "9999-12-31";
+    const bd = b.deadline_type !== "none" && b.deadline ? b.deadline : "9999-12-31";
+    return ad.localeCompare(bd);
+  });
 
   return (
     <div className="space-y-5">
       <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
 
-      {summary && (
+      {ranked.length > 0 && (
         <div className="card p-4">
-          <div className="eyebrow mb-1.5">Priorities right now</div>
-          <p className="text-ink-soft text-sm leading-relaxed">{summary}</p>
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="eyebrow">Priorities</div>
+            <div className="text-[11px] text-ink-faint">Darker = higher</div>
+          </div>
+          <div className="space-y-1">
+            {ranked.map((p) => (
+              <button key={p.id} onClick={() => jumpTo(p.id)}
+                className="w-full flex items-center gap-3 text-left rounded-xl px-2 py-1.5 hover:bg-white/40 transition">
+                <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: priorityShade(p.importance) }} />
+                <span className="text-sm text-pine flex-1 truncate">{p.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
