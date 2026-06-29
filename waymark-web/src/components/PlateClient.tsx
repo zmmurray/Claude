@@ -17,22 +17,30 @@ function priorityShade(importance: number): string {
   }
 }
 
+// A plain-English reason for why the top projects rank where they do.
+function priorityReason(ranked: Project[]): string {
+  if (!ranked.length) return "";
+  const top = ranked[0];
+  const fmt = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (top.deadline_type !== "none" && top.deadline) {
+    return `${top.name} sits on top — it's due ${fmt(top.deadline)}. Everything else is ordered by importance, with sooner deadlines first.`;
+  }
+  return `${top.name} sits on top — it's your highest-importance project right now. The rest follow by importance.`;
+}
+
 export default function PlateClient({ userId }: { userId: string }) {
   const sb = createSupabaseBrowser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [summary, setSummary] = useState("");
   const [showAllPri, setShowAllPri] = useState(false);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function load() {
-    const [{ data: p }, { data: t }, { data: snap }] = await Promise.all([
+    const [{ data: p }, { data: t }] = await Promise.all([
       sb.from("projects").select("*").eq("is_done", false).order("created_at"),
       sb.from("tasks").select("*").order("created_at"),
-      sb.from("focus_snapshots").select("gist").order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
-    setSummary((snap?.gist as string) ?? "");
     // Collapse any accidental duplicate projects (same name) and to-dos
     // (same title within a project) so they show once.
     const seenP = new Set<string>();
@@ -125,7 +133,7 @@ export default function PlateClient({ userId }: { userId: string }) {
             <div className="eyebrow">Priorities</div>
             <div className="text-[11px] text-ink-faint">Darker = higher</div>
           </div>
-          {summary && <p className="text-sm text-ink-soft leading-relaxed mb-3">{summary}</p>}
+          {priorityReason(ranked) && <p className="text-sm text-ink-soft leading-relaxed mb-3">{priorityReason(ranked)}</p>}
           <div className="space-y-1">
             {(showAllPri ? ranked : ranked.slice(0, 4)).map((p) => (
               <button key={p.id} onClick={() => jumpTo(p.id)}

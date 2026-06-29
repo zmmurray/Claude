@@ -30,6 +30,13 @@ export default function TodayClient({
   const [openTasks, setOpenTasks] = useState<MiniTask[]>(tasks);
   const [undo, setUndo] = useState<Undo>(null);
 
+  // Time-of-day greeting (set after mount to avoid an SSR/client time mismatch).
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
+  }, []);
+
   // Persist the visible list back onto the saved snapshot so dismissed items
   // (Done / Not now) don't come back when the page reloads.
   async function persist(nextItems: FocusItem[]) {
@@ -162,8 +169,11 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
-      {/* Section heading */}
-      <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">Right now</h1>
+      {/* Greeting + section heading */}
+      <div>
+        {greeting && <div className="text-ink-soft mb-0.5">{greeting}.</div>}
+        <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">Right now</h1>
+      </div>
 
       {undoBar}
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
