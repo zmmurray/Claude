@@ -3,10 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import SummitCelebration from "./SummitCelebration";
 import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+
+const Grip = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
+    <circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" />
+    <circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+  </svg>
+);
 
 type Mini = { id: string; name: string };
 type MiniTask = { id: string; title: string; project_id: string };
@@ -37,6 +50,22 @@ export default function TodayClient({
     const h = new Date().getHours();
     setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
   }, []);
+
+  // Drag to reorder focus items (works on touch via a touch-action:none handle).
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    setItems((cur) => {
+      const oldIndex = cur.findIndex((it) => it.title === active.id);
+      const newIndex = cur.findIndex((it) => it.title === over.id);
+      if (oldIndex < 0 || newIndex < 0) return cur;
+      const next = arrayMove(cur, oldIndex, newIndex);
+      persist(next);
+      return next;
+    });
+    setUndo(null);
+  }
 
   // Persist the visible list back onto the saved snapshot so dismissed items
   // (Done / Not now) don't come back when the page reloads.
@@ -179,80 +208,33 @@ export default function TodayClient({
       {undoBar}
       {gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
-      {hero ? (
-        <div>
-          <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
-          {/* The one focal card — deep cinematic pine. Tap to open the project. */}
-          <div onClick={() => openProject(hero)} role="button"
-               className="rounded-[30px] p-7 shadow-lift relative overflow-hidden cursor-pointer"
-               style={{ background: "linear-gradient(165deg,#1c463c 0%,#0B2B26 60%,#051F20 100%)", border: "1px solid rgba(142,182,155,0.22)" }}>
-            {/* faint mist + peak glow in the corner */}
-            <div className="pointer-events-none absolute inset-0"
-                 style={{ background: "radial-gradient(420px 240px at 88% -10%, rgba(142,182,155,0.30), transparent 60%)" }} />
-            <div className="relative flex items-start gap-3">
-              <div className="h-10 w-10 rounded-full flex items-center justify-center text-pine-darkest shrink-0"
-                   style={{ background: "linear-gradient(180deg,#bfe0c8,#8EB69B)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20l5-9 3 4.5L15.5 9 20 20z" /></svg>
-              </div>
-              <div className="flex-1">
-                {hero.project && <div className="text-xs uppercase tracking-[0.14em] font-semibold text-sage">{hero.project}</div>}
-                <h2 className="font-display text-[28px] leading-tight text-white mt-0.5">{hero.title}</h2>
-                <p className="text-mint/80 mt-1 leading-relaxed">{hero.why}</p>
-              </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={items.map((it) => it.title)} strategy={verticalListSortingStrategy}>
+          {hero ? (
+            <div>
+              <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
+              <HeroFocus item={hero}
+                onDone={() => done(hero, 0)} onSkip={() => skip(hero, 0)}
+                onTell={() => tellMore(hero)} onOpen={() => openProject(hero)} />
             </div>
-            {/* trail + flag motif */}
-            <div className="relative mt-5 flex items-center text-sage">
-              <svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round">
-                <path d="M2 11 C 40 11, 50 4, 90 5 S 150 10, 186 4" />
-              </svg>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
+          ) : (
+            <div className="card-strong p-7 text-center">
+              <h2 className="font-display text-2xl mb-1 text-pine">Nothing pressing right now.</h2>
+              <p className="text-ink-soft">{gist || "You're good — enjoy the quiet."}</p>
             </div>
-            <div className="relative flex items-center gap-2.5 mt-5">
-              <button onClick={(e) => { e.stopPropagation(); done(hero, 0); }}
-                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-pine-darkest transition hover:brightness-105"
-                style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)", boxShadow: "0 14px 30px -14px rgba(142,182,155,0.5)" }}>
-                {copy.today.done}
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); tellMore(hero); }}
-                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium text-mint/90 transition hover:bg-white/10"
-                style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3V7a2 2 0 012-2z" /></svg>
-                {copy.today.discuss}
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); skip(hero, 0); }}
-                className="ml-auto text-mint/50 hover:text-mint/80 text-sm px-2 transition">
-                {copy.today.notNow}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="card-strong p-7 text-center">
-          <h2 className="font-display text-2xl mb-1 text-pine">Nothing pressing right now.</h2>
-          <p className="text-ink-soft">{gist || "You're good — enjoy the quiet."}</p>
-        </div>
-      )}
+          )}
 
-      {rest.length > 0 && (
-        <div className="space-y-2.5">
-          <div className="eyebrow">{copy.today.more}</div>
-          {rest.map((it, i) => (
-            <div key={i} onClick={() => openProject(it)} role="button"
-              className="card p-4 flex items-center gap-3 cursor-pointer">
-              <button onClick={(e) => { e.stopPropagation(); done(it, i + 1); }}
-                className="h-9 w-9 rounded-full bg-moss/12 text-moss flex items-center justify-center hover:bg-moss/20 transition shrink-0"
-                title={copy.today.done}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /></svg>
-              </button>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-pine truncate">{it.title}</div>
-                <div className="text-sm text-ink-faint truncate">{it.project ?? it.why}</div>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); skip(it, i + 1); }} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
+          {rest.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="eyebrow">{copy.today.more}</div>
+              {rest.map((it, i) => (
+                <RowFocus key={it.title} item={it}
+                  onDone={() => done(it, i + 1)} onSkip={() => skip(it, i + 1)} onOpen={() => openProject(it)} />
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
+        </SortableContext>
+      </DndContext>
 
       <div className="card p-4">
         <div className="eyebrow mb-2.5">{copy.steer.prompt}</div>
@@ -264,6 +246,90 @@ export default function TodayClient({
         </div>
         {loading && <div className="text-sm text-ink-faint mt-3">Thinking it through…</div>}
       </div>
+    </div>
+  );
+}
+
+function HeroFocus({ item, onDone, onSkip, onTell, onOpen }: {
+  item: FocusItem; onDone: () => void; onSkip: () => void; onTell: () => void; onOpen: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.title });
+  return (
+    <div ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.85 : 1, zIndex: isDragging ? 30 : undefined, position: "relative" }}>
+      <div onClick={onOpen} role="button"
+        className="rounded-[30px] p-7 shadow-lift relative overflow-hidden cursor-pointer"
+        style={{ background: "linear-gradient(165deg,#1c463c 0%,#0B2B26 60%,#051F20 100%)", border: "1px solid rgba(142,182,155,0.22)" }}>
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(420px 240px at 88% -10%, rgba(142,182,155,0.30), transparent 60%)" }} />
+        <button {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
+          className="absolute top-4 right-3 z-10 text-sage/70 hover:text-sage cursor-grab active:cursor-grabbing p-1"
+          style={{ touchAction: "none" }}>
+          <Grip />
+        </button>
+        <div className="relative flex items-start gap-3 pr-7">
+          <div className="h-10 w-10 rounded-full flex items-center justify-center text-pine-darkest shrink-0"
+            style={{ background: "linear-gradient(180deg,#bfe0c8,#8EB69B)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20l5-9 3 4.5L15.5 9 20 20z" /></svg>
+          </div>
+          <div className="flex-1">
+            {item.project && <div className="text-xs uppercase tracking-[0.14em] font-semibold text-sage">{item.project}</div>}
+            <h2 className="font-display text-[28px] leading-tight text-white mt-0.5">{item.title}</h2>
+            <p className="text-mint/80 mt-1 leading-relaxed">{item.why}</p>
+          </div>
+        </div>
+        <div className="relative mt-5 flex items-center text-sage">
+          <svg width="100%" height="14" viewBox="0 0 200 14" preserveAspectRatio="none" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="3 4" strokeLinecap="round">
+            <path d="M2 11 C 40 11, 50 4, 90 5 S 150 10, 186 4" />
+          </svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="-ml-1"><path d="M6 3v18M6 4h11l-2.5 3.5L17 11H6z" /></svg>
+        </div>
+        <div className="relative flex items-center gap-2.5 mt-5">
+          <button onClick={(e) => { e.stopPropagation(); onDone(); }}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-semibold text-pine-darkest transition hover:brightness-105"
+            style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)", boxShadow: "0 14px 30px -14px rgba(142,182,155,0.5)" }}>
+            {copy.today.done}
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onTell(); }}
+            className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-medium text-mint/90 transition hover:bg-white/10"
+            style={{ border: "1px solid rgba(142,182,155,0.4)" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 5h14a2 2 0 012 2v8a2 2 0 01-2 2H9l-4 3V7a2 2 0 012-2z" /></svg>
+            {copy.today.discuss}
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onSkip(); }}
+            className="ml-auto text-mint/50 hover:text-mint/80 text-sm px-2 transition">
+            {copy.today.notNow}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RowFocus({ item, onDone, onSkip, onOpen }: {
+  item: FocusItem; onDone: () => void; onSkip: () => void; onOpen: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.title });
+  return (
+    <div ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.85 : 1, zIndex: isDragging ? 30 : undefined }}
+      onClick={onOpen} role="button"
+      className="card p-4 flex items-center gap-2.5 cursor-pointer">
+      <button {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
+        className="text-ink-faint hover:text-ink-soft cursor-grab active:cursor-grabbing shrink-0 -ml-1"
+        style={{ touchAction: "none" }}>
+        <Grip />
+      </button>
+      <button onClick={(e) => { e.stopPropagation(); onDone(); }}
+        className="h-9 w-9 rounded-full bg-moss/12 text-moss flex items-center justify-center hover:bg-moss/20 transition shrink-0"
+        title={copy.today.done}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /></svg>
+      </button>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-pine truncate">{item.title}</div>
+        <div className="text-sm text-ink-faint truncate">{item.project ?? item.why}</div>
+      </div>
+      <button onClick={(e) => { e.stopPropagation(); onSkip(); }} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
     </div>
   );
 }

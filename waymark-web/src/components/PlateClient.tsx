@@ -17,15 +17,12 @@ function priorityShade(importance: number): string {
   }
 }
 
-// A plain-English reason for why the top projects rank where they do.
-function priorityReason(ranked: Project[]): string {
-  if (!ranked.length) return "";
-  const top = ranked[0];
-  const fmt = (d: string) => new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  if (top.deadline_type !== "none" && top.deadline) {
-    return `${top.name} sits on top — it's due ${fmt(top.deadline)}. Everything else is ordered by importance, with sooner deadlines first.`;
-  }
-  return `${top.name} sits on top — it's your highest-importance project right now. The rest follow by importance.`;
+// Rank: importance (desc), then sooner deadline first.
+function byPriority(a: Project, b: Project) {
+  if (b.importance !== a.importance) return b.importance - a.importance;
+  const ad = a.deadline_type !== "none" && a.deadline ? a.deadline : "9999-12-31";
+  const bd = b.deadline_type !== "none" && b.deadline ? b.deadline : "9999-12-31";
+  return ad.localeCompare(bd);
 }
 
 export default function PlateClient({ userId }: { userId: string }) {
@@ -33,6 +30,7 @@ export default function PlateClient({ userId }: { userId: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [showAllPri, setShowAllPri] = useState(false);
+  const [reason, setReason] = useState("");
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -60,6 +58,30 @@ export default function PlateClient({ userId }: { userId: string }) {
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+
+  // Real "why these are the priority" reason from the strategist, cached locally
+  // and only regenerated when the ranking inputs (importance/deadline) change.
+  useEffect(() => {
+    if (loading) return;
+    if (!projects.length) { setReason(""); return; }
+    const sig = [...projects].sort(byPriority)
+      .map((p) => `${p.id}:${p.importance}:${p.deadline ?? ""}`).join("|");
+    try {
+      const cached = JSON.parse(localStorage.getItem("waymark_pri") || "null");
+      if (cached?.sig === sig && cached.reason) { setReason(cached.reason); return; }
+    } catch {}
+    let cancelled = false;
+    fetch("/api/priorities", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const text = (d?.reason as string) || "";
+        setReason(text);
+        try { localStorage.setItem("waymark_pri", JSON.stringify({ sig, reason: text })); } catch {}
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [loading, projects]);
 
   // If we arrived from a "Right now" card (/plate#proj-<id>), scroll to it and
   // give it a brief highlight so it's obvious which project we landed on.
@@ -115,13 +137,7 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   if (loading) return <div className="on-bg-soft">Loading…</div>;
 
-  // Ranked by importance (desc), then sooner deadline first.
-  const ranked = [...projects].sort((a, b) => {
-    if (b.importance !== a.importance) return b.importance - a.importance;
-    const ad = a.deadline_type !== "none" && a.deadline ? a.deadline : "9999-12-31";
-    const bd = b.deadline_type !== "none" && b.deadline ? b.deadline : "9999-12-31";
-    return ad.localeCompare(bd);
-  });
+  const ranked = [...projects].sort(byPriority);
 
   return (
     <div className="space-y-5">
@@ -133,7 +149,7 @@ export default function PlateClient({ userId }: { userId: string }) {
             <div className="eyebrow">Priorities</div>
             <div className="text-[11px] text-ink-faint">Darker = higher</div>
           </div>
-          {priorityReason(ranked) && <p className="text-sm text-ink-soft leading-relaxed mb-3">{priorityReason(ranked)}</p>}
+          {reason && <p className="text-sm text-ink-soft leading-relaxed mb-3">{reason}</p>}
           <div className="space-y-1">
             {(showAllPri ? ranked : ranked.slice(0, 4)).map((p) => (
               <button key={p.id} onClick={() => jumpTo(p.id)}
