@@ -56,7 +56,7 @@ const Grip = () => (
 );
 
 type Mini = { id: string; name: string };
-type MiniTask = { id: string; title: string; project_id: string };
+type MiniTask = { id: string; title: string; project_id: string; urgent?: boolean };
 type Undo = { type: "done" | "skip"; item: FocusItem; index: number; taskId: string | null } | null;
 
 export default function TodayClient({
@@ -148,9 +148,13 @@ export default function TodayClient({
       .order("created_at", { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => {
         if (data) {
+          const snapItems: FocusItem[] = Array.isArray((data as any).items) ? (data as any).items : [];
           setSnapshotId((data as any).id ?? null);
           setGist((data as any).gist ?? "");
-          setItems(Array.isArray((data as any).items) ? (data as any).items : []);
+          setItems(snapItems);
+          // If an urgent task isn't reflected in the focus, rebuild so it surfaces.
+          const titles = new Set(snapItems.map((i) => i.title.toLowerCase()));
+          if (tasks.some((t) => t.urgent && !titles.has(t.title.toLowerCase()))) strategize();
         } else if (hasContext) {
           strategize();
         }

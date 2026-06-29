@@ -15,7 +15,7 @@ export default async function TodayPage() {
     supabase.from("focus_snapshots").select("id,gist,items").eq("user_id", user.id)
       .order("created_at", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("projects").select("id,name").eq("user_id", user.id).eq("is_done", false),
-    supabase.from("tasks").select("id,title,project_id").eq("user_id", user.id).eq("done", false),
+    supabase.from("tasks").select("id,title,project_id,urgent").eq("user_id", user.id).eq("done", false),
   ]);
 
   return (
@@ -26,7 +26,7 @@ export default async function TodayPage() {
         initialItems={(snap?.items ?? []) as FocusItem[]}
         hasContext={(projects?.length ?? 0) > 0}
         projects={(projects ?? []) as { id: string; name: string }[]}
-        tasks={(tasks ?? []) as { id: string; title: string; project_id: string }[]}
+        tasks={(tasks ?? []) as { id: string; title: string; project_id: string; urgent?: boolean }[]}
       />
     </AppShell>
   );
