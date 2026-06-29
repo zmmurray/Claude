@@ -65,12 +65,12 @@ export default function PlateClient({ userId }: { userId: string }) {
     }
   }, [loading]);
 
-  async function addProject() {
+  // Hand new projects to the strategist (via chat) instead of inserting them
+  // directly — so it can place them in your priorities rather than guessing.
+  function addProject() {
     const name = newProject.trim();
     if (!name) return;
-    setNewProject("");
-    await sb.from("projects").insert({ user_id: userId, name, importance: 3 });
-    load();
+    window.location.assign(`/chat?add=${encodeURIComponent(name)}`);
   }
   async function addTask(projectId: string, title: string) {
     if (!title.trim()) return;
@@ -133,11 +133,14 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      <div className="card p-4 flex gap-2">
-        <input className="input" placeholder={copy.plate.addProject}
-          value={newProject} onChange={(e) => setNewProject(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addProject()} />
-        <button className="btn-primary" onClick={addProject}>Add</button>
+      <div className="card p-4">
+        <div className="flex gap-2">
+          <input className="input" placeholder={copy.plate.addProject}
+            value={newProject} onChange={(e) => setNewProject(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addProject()} />
+          <button className="btn-primary whitespace-nowrap" onClick={addProject}>Add</button>
+        </div>
+        <p className="text-xs text-ink-faint mt-2">{copy.plate.addProjectHint}</p>
       </div>
 
       {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}

@@ -97,9 +97,14 @@ export default function ChatClient({ initial }: { initial: ChatMessage[] }) {
   // If we arrived from "Add more info" on a project, pre-fill the box so the
   // person can just start talking about that project.
   useEffect(() => {
-    const about = new URLSearchParams(window.location.search).get("about");
+    const params = new URLSearchParams(window.location.search);
+    const about = params.get("about");
+    const add = params.get("add");
     if (about) {
       setInput(`A bit more about ${about}: `);
+      setTimeout(() => taRef.current?.focus(), 0);
+    } else if (add) {
+      setInput(`I want to add a new project: ${add}. Help me place it and break it into first steps.`);
       setTimeout(() => taRef.current?.focus(), 0);
     }
   }, []);

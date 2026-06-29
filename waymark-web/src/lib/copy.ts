@@ -63,7 +63,8 @@ export const copy = {
   plate: {
     title: "All projects",
     empty: "Nothing here yet. Tell me what you're working on and it'll show up.",
-    addProject: "What else are you working on?",
+    addProject: "Add a project…",
+    addProjectHint: "New projects go through the strategist so it can place them in your priorities.",
     addTask: "Add a to-do…",
     addInfo: "Add details",
     finish: "Close it out",
