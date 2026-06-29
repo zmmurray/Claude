@@ -76,6 +76,31 @@ body {
 .summit-glow { animation: summitGlow 1.1s ease-out both; }
 .summit-spark { animation: summitSpark 1.1s ease-out both; }
 .summit-flag { animation: summitSway 2.4s ease-in-out 0.9s infinite; }
+/* Cinematic summit celebration: trail draws up, summit blooms */
+@keyframes trailDraw { to { stroke-dashoffset: 0; } }
+@keyframes summitBloom {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 1; }
+  100% { opacity: 0.95; transform: scale(1); }
+}
+@keyframes rayPop {
+  0% { opacity: 0; transform: scale(0.2); }
+  55% { opacity: 1; }
+  100% { opacity: 0.9; transform: scale(1); }
+}
+@keyframes peakRise {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.cine-peak { animation: peakRise 0.8s cubic-bezier(.2,.8,.25,1) both; transform-box: fill-box; }
+.cine-trail { stroke-dasharray: 1; stroke-dashoffset: 1; animation: trailDraw 1.5s ease-in-out 0.3s forwards; }
+.cine-bloom { animation: summitBloom 0.9s ease-out 1.55s both; transform-box: fill-box; transform-origin: center; }
+.cine-ray { animation: rayPop 0.7s ease-out 1.7s both; transform-box: fill-box; transform-origin: 120px 46px; }
+@media (prefers-reduced-motion: reduce) {
+  .cine-peak, .cine-bloom, .cine-ray { animation: none; opacity: 1; }
+  .cine-trail { animation: none; stroke-dashoffset: 0; }
+}
+
 @keyframes taskPop {
   0% { transform: scale(0.4); opacity: 0; }
   30% { transform: scale(1.15); opacity: 1; }
