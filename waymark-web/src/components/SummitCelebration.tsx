@@ -1,8 +1,8 @@
 // A clean, cinematic "you made it" moment: the route draws itself up the peak,
 // then the summit blooms with light. Pure SVG + CSS (see globals.css), on-palette.
-export default function SummitCelebration() {
+export default function SummitCelebration({ width = 240 }: { width?: number }) {
   return (
-    <div className="mx-auto mb-4 w-[240px] max-w-full">
+    <div className="mx-auto mb-4 max-w-full" style={{ width }}>
       <svg viewBox="0 0 240 180" width="100%" xmlns="http://www.w3.org/2000/svg" aria-hidden>
         <defs>
           <radialGradient id="cineGlow" cx="50%" cy="50%" r="50%">

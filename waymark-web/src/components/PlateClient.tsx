@@ -149,11 +149,13 @@ export default function PlateClient({ userId }: { userId: string }) {
       {celebrate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
           onClick={() => setCelebrate(null)}
-          style={{ background: "rgba(5,31,32,0.4)", WebkitBackdropFilter: "blur(4px)", backdropFilter: "blur(4px)" }}>
-          <div className="card-strong p-8 text-center max-w-sm w-full">
-            <SummitCelebration />
-            <h2 className="font-display text-2xl text-pine mb-1">Nice — done!</h2>
-            <p className="text-ink-soft">“{celebrate}” is wrapped. One less thing to carry.</p>
+          style={{ background: "rgba(11,43,38,0.30)", WebkitBackdropFilter: "blur(6px)", backdropFilter: "blur(6px)" }}>
+          <div className="card-strong w-full max-w-xs p-7 text-center rounded-[30px]">
+            <SummitCelebration width={180} />
+            <div className="eyebrow mb-1.5">Project complete</div>
+            <h2 className="text-xl font-bold text-pine leading-snug">{celebrate}</h2>
+            <p className="text-ink-soft text-sm mt-1.5">Wrapped — one less thing to carry.</p>
+            <p className="text-ink-faint text-xs mt-4">Tap anywhere to close</p>
           </div>
         </div>
       )}
