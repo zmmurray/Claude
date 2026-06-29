@@ -77,7 +77,8 @@ export async function applyUpdate(
       if (typeof p.importance === "number") patch.importance = Math.min(5, Math.max(1, Math.round(p.importance)));
       if (deadlineType) { patch.deadline_type = deadlineType; patch.deadline = deadlineType === "none" ? null : p.deadline ?? null; }
       if (goalId) patch.goal_id = goalId;
-      if (p.notes && p.notes.trim()) patch.notes = existing.notes ? `${existing.notes}\n${p.notes.trim()}` : p.notes.trim();
+      // Replace notes with the latest concise status (don't accumulate a log).
+      if (p.notes && p.notes.trim()) patch.notes = p.notes.trim();
       if (Object.keys(patch).length) {
         await supabase.from("projects").update(patch).eq("id", existing.id);
         touched.add(name);
