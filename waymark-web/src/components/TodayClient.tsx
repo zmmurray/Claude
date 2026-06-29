@@ -13,6 +13,11 @@ import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 
+const ENCOURAGEMENTS = [
+  "You got this.", "One step at a time.", "Let's make it count.", "Steady wins it.",
+  "Small steps, real progress.", "Here we go.", "You're on your way.", "Make it a good one.",
+];
+
 // Time-of-day glyph: rising half-sun (morning), full sun (afternoon), setting half-sun (evening).
 const PhaseIcon = ({ phase }: { phase: "morning" | "afternoon" | "evening" }) => {
   const common = { width: 24, height: 24, viewBox: "0 0 24 24", fill: "none", stroke: "#6e977f", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -78,12 +83,20 @@ export default function TodayClient({
   const [dateLabel, setDateLabel] = useState("");
   const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
+  const [pop, setPop] = useState(false); // brief celebration when a task is checked
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
     const p = h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
-    setPhase(p);
-    setGreeting(p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : "Good evening");
+    const timeGreet = p === "morning" ? "Good morning" : p === "afternoon" ? "Good afternoon" : "Good evening";
+    // Sometimes swap the time greeting for a little encouragement.
+    if (Math.random() < 0.4) {
+      setGreeting(ENCOURAGEMENTS[Math.floor(Math.random() * ENCOURAGEMENTS.length)]);
+      setPhase(""); // no sun icon on encouragements
+    } else {
+      setGreeting(timeGreet);
+      setPhase(p);
+    }
     setDateLabel(now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
   }, []);
 
@@ -178,6 +191,7 @@ export default function TodayClient({
     persist(remaining);
     setUndo({ type: "done", item, index, taskId });
     if (remaining.length === 0) setFinished("done");
+    else { setPop(true); setTimeout(() => setPop(false), 1100); }
   }
 
   function skip(item: FocusItem, index: number) {
@@ -250,6 +264,21 @@ export default function TodayClient({
 
   return (
     <div className="space-y-6">
+      {pop && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="task-pop relative">
+            <div className="h-20 w-20 rounded-full flex items-center justify-center shadow-lift"
+                 style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)" }}>
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0B2B26" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <span className="summit-spark absolute -top-1 -left-1 h-2 w-2 rounded-full bg-moss" style={{ animationDelay: "0.05s" }} />
+            <span className="summit-spark absolute -top-2 right-2 h-1.5 w-1.5 rounded-full bg-sage-deep" style={{ animationDelay: "0.18s" }} />
+            <span className="summit-spark absolute bottom-0 -right-2 h-2 w-2 rounded-full bg-moss" style={{ animationDelay: "0.12s" }} />
+            <span className="summit-spark absolute -bottom-1 left-1 h-1.5 w-1.5 rounded-full bg-sage-deep" style={{ animationDelay: "0.24s" }} />
+          </div>
+        </div>
+      )}
+
       {/* Header — date eyebrow + warm greeting title with a time-of-day icon */}
       <div>
         <div className="eyebrow">{dateLabel || "Today"}</div>

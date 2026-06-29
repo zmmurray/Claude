@@ -23,11 +23,25 @@ export async function POST(req: Request) {
   const raw = await callModel(STRATEGIST_PERSONA, [{ role: "user", content: focusPrompt(contextText, steer, today) }]);
   const parsed = parseFocus(raw) ?? { gist: "I couldn't read the plan just now — try again in a sec.", items: [] };
 
+  // Guarantee open URGENT tasks lead the focus — don't rely on the model alone.
+  // Skip when the user explicitly steered (e.g. "I need a break").
+  let items = parsed.items;
+  if (!steer) {
+    const projName = (pid: string) => ctx.projects.find((p) => p.id === pid)?.name;
+    const urgent = ctx.tasks
+      .filter((t) => t.urgent)
+      .map((t) => ({ title: t.title, why: "You wanted this done now.", kind: "quick" as const, project: projName(t.project_id) }));
+    if (urgent.length) {
+      const seen = new Set(urgent.map((i) => i.title.toLowerCase()));
+      items = [...urgent, ...parsed.items.filter((i) => !seen.has(i.title.toLowerCase()))].slice(0, 6);
+    }
+  }
+
   const { data: inserted } = await supabase
     .from("focus_snapshots")
-    .insert({ user_id: user.id, gist: parsed.gist, items: parsed.items })
+    .insert({ user_id: user.id, gist: parsed.gist, items })
     .select("id")
     .single();
 
-  return NextResponse.json({ ...parsed, snapshotId: inserted?.id ?? null });
+  return NextResponse.json({ gist: parsed.gist, items, snapshotId: inserted?.id ?? null });
 }
