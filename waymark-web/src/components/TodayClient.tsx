@@ -126,8 +126,22 @@ export default function TodayClient({
     } finally { setLoading(false); }
   }
 
+  // On open, reconcile with the latest snapshot in the DB (the server page can be
+  // cached). If there's none and there's context (e.g. chat just changed things
+  // and cleared the old focus), generate fresh focus so new/urgent tasks surface.
   useEffect(() => {
-    if (hasContext && initialItems.length === 0 && !initialGist) strategize();
+    const sb = createSupabaseBrowser();
+    sb.from("focus_snapshots").select("id,gist,items")
+      .order("created_at", { ascending: false }).limit(1).maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSnapshotId((data as any).id ?? null);
+          setGist((data as any).gist ?? "");
+          setItems(Array.isArray((data as any).items) ? (data as any).items : []);
+        } else if (hasContext) {
+          strategize();
+        }
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
