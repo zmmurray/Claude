@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import SummitCelebration from "./SummitCelebration";
 import { copy } from "@/lib/copy";
 import type { FocusItem } from "@/lib/types";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
@@ -152,8 +153,8 @@ export default function TodayClient({
     return (
       <div className="space-y-4">
         {undoBar}
-        <div className="card-strong p-8">
-          <div className="text-3xl mb-3">{finished === "done" ? "✓" : "👍"}</div>
+        <div className={`card-strong p-8 ${finished === "done" ? "text-center" : ""}`}>
+          {finished === "done" ? <SummitCelebration /> : <div className="text-3xl mb-3">👍</div>}
           <h1 className="font-display text-[28px] mb-1 text-pine leading-tight">
             {finished === "done" ? copy.today.enoughTitle : copy.today.allDone}
           </h1>
