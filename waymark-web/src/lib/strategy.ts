@@ -161,7 +161,11 @@ export function extractUpdatePrompt(context: string, today?: string): string {
 The user's current world:
 ${context}
 
-From the conversation — especially the user's most recent messages — output what should be saved:
+Only capture what is NEW or explicitly changed in the user's latest message. Do NOT re-list tasks
+or projects that already exist in their world above, and never re-add tasks they've finished. If
+the latest message has nothing to save, output {}.
+
+From the user's latest message, output what should be saved:
 - Capture EVERY task the user mentions — even tiny ones, and even when they DON'T say "add this."
   Treat natural statements of intent as tasks: "I need to eat a snack in 2 min", "I have to call
   the bank", "I should email Sam", "gotta pick up milk" all become tracked tasks. Never decide
