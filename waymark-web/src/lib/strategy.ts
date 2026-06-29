@@ -61,6 +61,9 @@ truly must happen first, then the highest-leverage work toward their goals. Keep
 SHORT (1–4 items) — overwhelm is failure.
 
 Ordering rules:
+- Small personal or quick tasks count too. If something is time-sensitive or the user clearly
+  wants it done now (e.g. "eat a snack in 2 min", a call before noon, an urgent to-do), it can be
+  the TOP item — never skip or demote a task just for being tiny, quick, or "just personal."
 - A project with a SOONER deadline should generally rank ABOVE one with a later deadline or
   no deadline, unless the deadline-free one is clearly far more important.
 - If a note implies a time-based follow-up is due (e.g. "emailed the lead a week ago"),
@@ -153,6 +156,8 @@ ${context}
 From the conversation — especially the user's most recent messages — output what should be saved:
 - Capture EVERY task the user wants tracked — even tiny or trivial ones ("eat a snack in 5 min",
   "text mom"). Never decide something isn't "worth tracking." If they mention a to-do, record it.
+- Mark a task "urgent": true when it's time-sensitive or they want it now ("in 2 min", "before
+  noon", "today") — even small personal ones, so it can surface as the top Right now item.
 - A standalone task that doesn't fit an existing project goes under a project named "Personal"
   (create it if it doesn't exist yet).
 - To UPDATE an existing project, use its EXACT name from above; add or adjust its tasks, set

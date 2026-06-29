@@ -69,7 +69,7 @@ export const copy = {
     addProjectHint: "New projects go through the strategist so it can place them in your priorities.",
     addTask: "Add a to-do…",
     addInfo: "Add details",
-    finish: "Close it out",
+    finish: "Done!",
     reopen: "Reopen",
   },
 
