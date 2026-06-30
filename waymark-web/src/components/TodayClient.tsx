@@ -85,6 +85,7 @@ export default function TodayClient({
   const [dateLabel, setDateLabel] = useState("");
   const [phase, setPhase] = useState<"" | "morning" | "afternoon" | "evening">("");
   const [resting, setResting] = useState(false);
+  const [restKind, setRestKind] = useState<"break" | "breather">("break");
   const [pop, setPop] = useState(false); // brief celebration when a task is checked
   const [popWord, setPopWord] = useState("Nice!");
   useEffect(() => {
@@ -119,6 +120,13 @@ export default function TodayClient({
     setUndo(null);
   }
 
+  function jumpBackIn() {
+    setResting(false);
+    // A break cleared the focus, so rebuild it; a breather still has the
+    // remaining items in hand, so just resume.
+    if (restKind === "break") strategize();
+  }
+
   // Persist the visible list back onto the saved snapshot so dismissed items
   // (Done / Not now) don't come back when the page reloads.
   async function persist(nextItems: FocusItem[]) {
@@ -130,6 +138,7 @@ export default function TodayClient({
   async function strategize(steer?: string) {
     setLoading(true); setFinished(null); setUndo(null);
     setResting(steer === copy.steer.wiped);
+    if (steer === copy.steer.wiped) setRestKind("break");
     try {
       const res = await fetch("/api/strategize", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -202,8 +211,15 @@ export default function TodayClient({
     setItems(remaining);
     persist(remaining);
     setUndo({ type: "done", item, index, taskId });
-    if (remaining.length === 0) setFinished("done");
-    else {
+    if (remaining.length === 0) {
+      setFinished("done");
+    } else if (index === 0) {
+      // Finished the main focus — don't shove the next one up. Rest automatically;
+      // continuing is a choice, not a default.
+      setRestKind("breather");
+      setResting(true);
+    } else {
+      // Knocked out a smaller "next up" item — celebrate and keep the focus.
       setPopWord(POP_WORDS[Math.floor(Math.random() * POP_WORDS.length)]);
       setPop(true);
       setTimeout(() => setPop(false), 1350);
@@ -325,11 +341,22 @@ export default function TodayClient({
 
       {resting && (
         <div className="card-strong p-8 text-center">
-          <div className="text-3xl mb-2">🌿</div>
-          <h2 className="font-display text-2xl mb-1 text-pine">{copy.today.resting}</h2>
-          <p className="text-ink-soft mb-5">{gist || "Rest first — it'll keep."}</p>
-          <button onClick={() => strategize()} disabled={loading} className="btn-primary">
-            {loading ? "One sec…" : copy.today.jumpBackIn}
+          {restKind === "breather" ? (
+            <div className="mx-auto mb-3 h-14 w-14 rounded-full flex items-center justify-center text-pine-darkest"
+                 style={{ background: "linear-gradient(180deg,#DAF1DE,#8EB69B)" }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7" /></svg>
+            </div>
+          ) : (
+            <div className="text-3xl mb-2">🌿</div>
+          )}
+          <h2 className="font-display text-2xl mb-1 text-pine">
+            {restKind === "breather" ? copy.today.breatherTitle : copy.today.resting}
+          </h2>
+          <p className="text-ink-soft mb-5">
+            {restKind === "breather" ? copy.today.breatherBody : gist || "Rest first — it'll keep."}
+          </p>
+          <button onClick={jumpBackIn} disabled={loading} className={restKind === "breather" ? "btn-quiet" : "btn-primary"}>
+            {loading ? "One sec…" : restKind === "breather" ? copy.today.keepGoing : copy.today.jumpBackIn}
           </button>
         </div>
       )}
@@ -369,16 +396,18 @@ export default function TodayClient({
       </DndContext>
       )}
 
-      <div className="card p-4">
-        <div className="eyebrow mb-2.5">{copy.steer.prompt}</div>
-        <div className="flex flex-wrap gap-2">
-          <button className="chip" onClick={() => strategize(copy.steer.shortTime)} disabled={loading}>{copy.steer.shortTime}</button>
-          <button className="chip" onClick={() => strategize(copy.steer.wiped)} disabled={loading}>{copy.steer.wiped}</button>
-          <button className="chip" onClick={() => strategize()} disabled={loading}>{copy.today.refresh}</button>
-          <Link href="/chat" className="chip">{copy.today.talk}</Link>
+      {!resting && (
+        <div className="card p-4">
+          <div className="eyebrow mb-2.5">{copy.steer.prompt}</div>
+          <div className="flex flex-wrap gap-2">
+            <button className="chip" onClick={() => strategize(copy.steer.shortTime)} disabled={loading}>{copy.steer.shortTime}</button>
+            <button className="chip" onClick={() => strategize(copy.steer.wiped)} disabled={loading}>{copy.steer.wiped}</button>
+            <button className="chip" onClick={() => strategize()} disabled={loading}>{copy.today.refresh}</button>
+            <Link href="/chat" className="chip">{copy.today.talk}</Link>
+          </div>
+          {loading && <div className="text-sm text-ink-faint mt-3">Thinking it through…</div>}
         </div>
-        {loading && <div className="text-sm text-ink-faint mt-3">Thinking it through…</div>}
-      </div>
+      )}
     </div>
   );
 }

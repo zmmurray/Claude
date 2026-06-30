@@ -41,6 +41,9 @@ export const copy = {
     allDone: "That's everything I'd flag for now.",
     jumpBackIn: "Jump back in",
     resting: "Take your break.",
+    breatherTitle: "Nice — that's done.",
+    breatherBody: "Take a breath. The rest can wait — come back to it when you're ready, no rush.",
+    keepGoing: "I've got more in me",
   },
 
   steer: {
