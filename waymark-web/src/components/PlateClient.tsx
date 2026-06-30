@@ -14,6 +14,26 @@ import SummitCelebration from "./SummitCelebration";
 import type { Project, TaskItem } from "@/lib/types";
 
 const ORDER_KEY = "waymark_proj_order";
+const TASK_ORDER_KEY = "waymark_task_order";
+
+// Read/write the per-project manual task order: { [projectId]: taskId[] }.
+function readTaskOrder(): Record<string, string[]> {
+  try { return JSON.parse(localStorage.getItem(TASK_ORDER_KEY) || "{}") || {}; } catch { return {}; }
+}
+function writeTaskOrder(m: Record<string, string[]>) {
+  try { localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(m)); } catch {}
+}
+
+// Order items by a saved id sequence; anything unplaced keeps its current order.
+function orderById<T extends { id: string }>(items: T[], ids: string[]): T[] {
+  if (!ids.length) return items;
+  const pos = new Map(ids.map((id, i) => [id, i]));
+  return [...items].sort((a, b) => {
+    const ai = pos.has(a.id) ? pos.get(a.id)! : Infinity;
+    const bi = pos.has(b.id) ? pos.get(b.id)! : Infinity;
+    return ai - bi;
+  });
+}
 
 // Apply a saved manual order: projects in the saved sequence first (in that
 // order), then anything new the user hasn't placed yet, by default priority.
@@ -315,10 +335,27 @@ function ProjectCard({
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.id });
 
-  const open = tasks.filter((task) => !task.done);
   const done = tasks.filter((task) => task.done);
   const total = tasks.length;
   const pct = total ? Math.round((done.length / total) * 100) : 0;
+
+  // Manual order of the open to-dos within this project (drag to reorder).
+  const [taskOrder, setTaskOrder] = useState<string[]>([]);
+  useEffect(() => { setTaskOrder(readTaskOrder()[project.id] ?? []); }, [project.id]);
+  const open = orderById(tasks.filter((task) => !task.done), taskOrder);
+
+  const taskSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  function onTaskDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const ids = open.map((t) => t.id);
+    const oldIndex = ids.indexOf(String(active.id));
+    const newIndex = ids.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(ids, oldIndex, newIndex);
+    setTaskOrder(next);
+    const m = readTaskOrder(); m[project.id] = next; writeTaskOrder(m);
+  }
 
   // Higher-priority shades are dark → light text; lighter shades → dark text.
   const dark = project.importance >= 3;
@@ -376,18 +413,17 @@ function ProjectCard({
       <div className="expandable-inner">
       <div className="px-5 py-5"
         style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)" }}>
-      <div className="space-y-2">
-        {open.map((task) => (
-          <div key={task.id} className="flex items-center gap-3">
-            <button onClick={() => onCompleteTask(task.id)} title="Mark done"
-              className="h-6 w-6 shrink-0 rounded-full border-2 border-moss/60 hover:border-moss hover:bg-moss/15 transition" />
-            <span className="text-ink">{task.title}</span>
-            {task.urgent && <span className="text-xs text-clay">urgent</span>}
+      <DndContext sensors={taskSensors} collisionDetection={closestCenter} onDragEnd={onTaskDragEnd}>
+        <SortableContext items={open.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {open.map((task) => (
+              <TaskRow key={task.id} task={task} onComplete={onCompleteTask} draggable={open.length > 1} />
+            ))}
           </div>
-        ))}
-        {open.length === 0 && total > 0 && <div className="text-sm text-moss">All to-dos done 🎉</div>}
-        {total === 0 && <div className="text-sm text-ink-faint">No to-dos yet.</div>}
-      </div>
+        </SortableContext>
+      </DndContext>
+      {open.length === 0 && total > 0 && <div className="text-sm text-moss">All to-dos done 🎉</div>}
+      {total === 0 && <div className="text-sm text-ink-faint">No to-dos yet.</div>}
 
       {/* Completed tasks (tucked away) */}
       {done.length > 0 && (
@@ -423,6 +459,31 @@ function ProjectCard({
       </div>
       </div>
       </div>
+    </div>
+  );
+}
+
+// One open to-do row inside a project — draggable (handle on the right) to
+// reorder it higher or lower within the project.
+function TaskRow({ task, onComplete, draggable }: {
+  task: TaskItem; onComplete: (id: string) => void; draggable: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
+  return (
+    <div ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.85 : 1, position: "relative", zIndex: isDragging ? 20 : undefined }}
+      className="flex items-center gap-3">
+      <button onClick={() => onComplete(task.id)} title="Mark done"
+        className="h-6 w-6 shrink-0 rounded-full border-2 border-moss/60 hover:border-moss hover:bg-moss/15 transition" />
+      <span className="text-ink flex-1 min-w-0 truncate">{task.title}</span>
+      {task.urgent && <span className="text-xs text-clay shrink-0">urgent</span>}
+      {draggable && (
+        <button {...attributes} {...listeners} aria-label="Drag to reorder"
+          className="text-ink-faint hover:text-ink-soft cursor-grab active:cursor-grabbing shrink-0 -mr-1"
+          style={{ touchAction: "none" }}>
+          <Grip />
+        </button>
+      )}
     </div>
   );
 }
