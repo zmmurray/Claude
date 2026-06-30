@@ -60,6 +60,7 @@ export default function PlateClient({ userId }: { userId: string }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [celebrate, setCelebrate] = useState<string | null>(null);
+  const [confirmDone, setConfirmDone] = useState<{ id: string; name: string } | null>(null);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
   const [orderIds, setOrderIds] = useState<string[]>([]);
@@ -148,8 +149,14 @@ export default function PlateClient({ userId }: { userId: string }) {
     await sb.from("tasks").update({ done: false, completed_at: null }).eq("id", id);
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: false, completed_at: null } : t)));
   }
-  async function finishProject(id: string, name: string) {
-    if (!window.confirm(`Mark “${name}” done? It'll move off your list.`)) return;
+  // Ask first, with an on-brand confirm card (not the native browser popup).
+  function finishProject(id: string, name: string) {
+    setConfirmDone({ id, name });
+  }
+  async function doFinishProject() {
+    if (!confirmDone) return;
+    const { id, name } = confirmDone;
+    setConfirmDone(null);
     await sb.from("projects").update({ is_done: true }).eq("id", id);
     setCelebrate(name);
     setTimeout(() => setCelebrate(null), 3200);
@@ -162,6 +169,22 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-5">
+      {confirmDone && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+          onClick={() => setConfirmDone(null)}
+          style={{ background: "rgba(11,43,38,0.30)", WebkitBackdropFilter: "blur(6px)", backdropFilter: "blur(6px)" }}>
+          <div className="card-strong w-full max-w-xs p-6 rounded-[28px]" onClick={(e) => e.stopPropagation()}>
+            <div className="eyebrow mb-1.5">Mark project done?</div>
+            <h2 className="text-lg font-semibold text-pine leading-snug">{confirmDone.name}</h2>
+            <p className="text-ink-soft text-sm mt-1.5">It'll move off your active list — you can still reopen it later.</p>
+            <div className="flex gap-2 mt-5">
+              <button className="btn-quiet flex-1" onClick={() => setConfirmDone(null)}>Cancel</button>
+              <button className="btn-primary flex-1" onClick={doFinishProject}>{copy.plate.finish}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {celebrate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
           onClick={() => setCelebrate(null)}
