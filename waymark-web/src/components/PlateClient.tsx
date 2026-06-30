@@ -58,9 +58,11 @@ function byPriority(a: Project, b: Project) {
 export default function PlateClient({ userId }: { userId: string }) {
   const sb = createSupabaseBrowser();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [donePjs, setDonePjs] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [celebrate, setCelebrate] = useState<string | null>(null);
-  const [confirmDone, setConfirmDone] = useState<{ id: string; name: string } | null>(null);
+  const [undoProject, setUndoProject] = useState<{ id: string; name: string } | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
   const [orderIds, setOrderIds] = useState<string[]>([]);
@@ -89,13 +91,15 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   async function load() {
     const [{ data: p }, { data: t }] = await Promise.all([
-      sb.from("projects").select("*").eq("is_done", false).order("created_at"),
+      sb.from("projects").select("*").order("created_at"),
       sb.from("tasks").select("*").order("created_at"),
     ]);
-    // Collapse any accidental duplicate projects (same name) and to-dos
+    // Collapse any accidental duplicate active projects (same name) and to-dos
     // (same title within a project) so they show once.
+    const all = (p ?? []) as Project[];
     const seenP = new Set<string>();
-    const projs = ((p ?? []) as Project[]).filter((pr) => {
+    const projs = all.filter((pr) => {
+      if (pr.is_done) return false;
       const k = norm(pr.name);
       if (seenP.has(k)) return false;
       seenP.add(k); return true;
@@ -107,6 +111,7 @@ export default function PlateClient({ userId }: { userId: string }) {
       seenT.add(k); return true;
     });
     setProjects(projs);
+    setDonePjs(all.filter((pr) => pr.is_done));
     setTasks(tsks);
     setLoading(false);
   }
@@ -149,17 +154,18 @@ export default function PlateClient({ userId }: { userId: string }) {
     await sb.from("tasks").update({ done: false, completed_at: null }).eq("id", id);
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: false, completed_at: null } : t)));
   }
-  // Ask first, with an on-brand confirm card (not the native browser popup).
-  function finishProject(id: string, name: string) {
-    setConfirmDone({ id, name });
-  }
-  async function doFinishProject() {
-    if (!confirmDone) return;
-    const { id, name } = confirmDone;
-    setConfirmDone(null);
+  // Mark done right away (no confirmation) — celebrate, then offer an Undo.
+  async function finishProject(id: string, name: string) {
     await sb.from("projects").update({ is_done: true }).eq("id", id);
     setCelebrate(name);
     setTimeout(() => setCelebrate(null), 3200);
+    setUndoProject({ id, name });
+    setTimeout(() => setUndoProject((u) => (u?.id === id ? null : u)), 8000);
+    load();
+  }
+  async function reopenProject(id: string) {
+    await sb.from("projects").update({ is_done: false }).eq("id", id);
+    setUndoProject((u) => (u?.id === id ? null : u));
     load();
   }
 
@@ -169,33 +175,25 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-5">
-      {confirmDone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
-          onClick={() => setConfirmDone(null)}
-          style={{ background: "rgba(11,43,38,0.30)", WebkitBackdropFilter: "blur(6px)", backdropFilter: "blur(6px)" }}>
-          <div className="card-strong w-full max-w-xs p-6 rounded-[28px]" onClick={(e) => e.stopPropagation()}>
-            <div className="eyebrow mb-1.5">Mark project done?</div>
-            <h2 className="text-lg font-semibold text-pine leading-snug">{confirmDone.name}</h2>
-            <p className="text-ink-soft text-sm mt-1.5">It'll move off your active list — you can still reopen it later.</p>
-            <div className="flex gap-2 mt-5">
-              <button className="btn-quiet flex-1" onClick={() => setConfirmDone(null)}>Cancel</button>
-              <button className="btn-primary flex-1" onClick={doFinishProject}>{copy.plate.finish}</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {celebrate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-hidden"
           onClick={() => setCelebrate(null)}
           style={{ background: "rgba(11,43,38,0.30)", WebkitBackdropFilter: "blur(6px)", backdropFilter: "blur(6px)" }}>
-          <div className="card-strong w-full max-w-xs p-7 text-center rounded-[30px]">
+          <ConfettiRain />
+          <div className="card-strong w-full max-w-xs p-7 text-center rounded-[30px] relative">
             <SummitCelebration width={180} />
             <div className="eyebrow mb-1.5">Project complete</div>
             <h2 className="text-xl font-bold text-pine leading-snug">{celebrate}</h2>
             <p className="text-ink-soft text-sm mt-1.5">Wrapped — one less thing to carry.</p>
             <p className="text-ink-faint text-xs mt-4">Tap anywhere to close</p>
           </div>
+        </div>
+      )}
+
+      {undoProject && !celebrate && (
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-24 z-40 card-strong px-4 py-3 flex items-center gap-4 rounded-full shadow-lift">
+          <span className="text-sm text-ink-soft">Marked done.</span>
+          <button onClick={() => reopenProject(undoProject.id)} className="text-moss font-semibold text-sm">{copy.today.undo}</button>
         </div>
       )}
 
@@ -236,6 +234,61 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
         <p className="text-xs text-ink-faint mt-2">{copy.plate.addProjectHint}</p>
       </div>
+
+      {/* Completed projects — tucked away, with a one-tap reopen. */}
+      {donePjs.length > 0 && (
+        <div className="card p-4">
+          <button onClick={() => setShowCompleted((s) => !s)}
+            className="w-full flex items-center justify-between text-left">
+            <span className="eyebrow">{showCompleted ? "Completed" : `${donePjs.length} completed`}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round"
+              className={`text-ink-faint transition-transform ${showCompleted ? "rotate-180" : ""}`}>
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {showCompleted && (
+            <div className="mt-3 space-y-1.5">
+              {donePjs.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 rounded-xl px-2 py-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: priorityShade(p.importance) }} />
+                  <span className="flex-1 text-sm text-ink-soft line-through truncate">{p.name}</span>
+                  <button onClick={() => reopenProject(p.id)} className="text-moss font-medium text-xs shrink-0">{copy.plate.reopen}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// A full-screen burst of falling confetti for the project-complete celebration.
+function ConfettiRain() {
+  const colors = ["#235347", "#8EB69B", "#DAF1DE", "#6e977f", "#bfe0c8", "#E9B98D"];
+  const pieces = Array.from({ length: 70 }).map((_, i) => {
+    const left = (i * 37) % 100;            // spread across the width
+    const delay = (i % 10) * 90;            // staggered start
+    const dur = 2200 + (i % 7) * 350;       // varied fall speed
+    const size = 7 + (i % 4) * 3;
+    const rot = (i % 2 ? 1 : -1) * (360 + (i % 5) * 180);
+    return { left, delay, dur, size, rot, color: colors[i % colors.length], round: i % 3 === 0 };
+  });
+  return (
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+      {pieces.map((p, i) => (
+        <span key={i} className="confetti-fall absolute top-0"
+          style={{
+            left: `${p.left}%`,
+            height: `${p.size}px`, width: `${p.size}px`,
+            background: p.color,
+            borderRadius: p.round ? "9999px" : "2px",
+            animationDelay: `${p.delay}ms`,
+            animationDuration: `${p.dur}ms`,
+            ["--rot" as any]: `${p.rot}deg`,
+          }} />
+      ))}
     </div>
   );
 }
