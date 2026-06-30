@@ -31,13 +31,13 @@ export async function POST(req: Request) {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const isNew = ctx.projects.length === 0;
 
-  // Two passes in parallel: the conversational reply (full history), and a dedicated
-  // extraction that only looks at the LATEST exchange — so it captures what's new in
-  // this message instead of re-deriving (and re-adding) the whole conversation.
-  const recentTurns = turns.slice(-2);
+  // Two passes in parallel: the conversational reply, and a dedicated extraction
+  // that pulls structured updates out of the conversation (so saving never depends
+  // on the chat model remembering to emit anything). Finished tasks are guarded
+  // against re-adding in applyUpdate, so we can safely read the full conversation.
   const [raw, extractRaw] = await Promise.all([
     callModel(chatSystem(contextText, today, isNew), turns, 1500),
-    callModel(extractUpdatePrompt(contextText, today), recentTurns, 1000),
+    callModel(extractUpdatePrompt(contextText, today), turns, 1000),
   ]);
 
   const ready = raw.includes("<<READY>>");

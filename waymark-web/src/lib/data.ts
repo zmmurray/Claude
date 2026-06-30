@@ -44,6 +44,14 @@ export async function applyUpdate(
   let goalCount = 0, projectCount = 0, taskCount = 0, contextSaved = false;
   const touched = new Set<string>(); // names of projects created or changed
 
+  // Global guard: titles of tasks the user already finished, across ALL projects.
+  // The extraction pass reads the whole conversation, so a finished item can be
+  // mentioned again in later turns — without this, it would silently re-add and
+  // the chat would feel "stuck in a loop" re-creating things you already did.
+  const { data: doneTasks } = await supabase
+    .from("tasks").select("title").eq("user_id", userId).eq("done", true);
+  const doneTitles = new Set((doneTasks ?? []).map((t: any) => norm(String(t.title))));
+
   // Durable "about me" context that informs every future recommendation.
   if (typeof update.context === "string" && update.context.trim()) {
     await supabase.from("profiles").upsert({ id: userId, context: update.context.trim() });
@@ -115,7 +123,7 @@ export async function applyUpdate(
 
     for (const t of p.tasks ?? []) {
       const title = (t.title ?? "").trim();
-      if (!title || taskTitles.has(norm(title))) continue;
+      if (!title || taskTitles.has(norm(title)) || doneTitles.has(norm(title))) continue;
       const effort = ["quick", "medium", "deep"].includes(t.effort ?? "") ? t.effort! : "medium";
       const { error: te } = await supabase.from("tasks").insert({
         user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
