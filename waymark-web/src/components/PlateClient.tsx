@@ -19,6 +19,13 @@ function priorityShade(importance: number): string {
   }
 }
 
+// Translucent version of a hex shade, for the frosted-glass fills.
+function rgba(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 // Rank: importance (desc), then sooner deadline first.
 function byPriority(a: Project, b: Project) {
   if (b.importance !== a.importance) return b.importance - a.importance;
@@ -173,6 +180,9 @@ function ProjectCard({
   const [t, setT] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [expanded, setExpanded] = useState(!!defaultOpen);
+  // Arriving from a "Right now" card highlights this project after load — open it
+  // up automatically so the tap lands you inside the project, not just near it.
+  useEffect(() => { if (defaultOpen) setExpanded(true); }, [defaultOpen]);
 
   const open = tasks.filter((task) => !task.done);
   const done = tasks.filter((task) => task.done);
@@ -187,7 +197,15 @@ function ProjectCard({
   return (
     <div id={`proj-${project.id}`}
       className={`overflow-hidden rounded-[24px] shadow-soft scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
-      style={{ background: accent }}>
+      style={{
+        // Frosted glass: a translucent priority shade with a soft top sheen, a
+        // backdrop blur so the misty page shows through, and a light inner edge.
+        background: `linear-gradient(155deg, rgba(255,255,255,0.28), rgba(255,255,255,0.06) 38%, rgba(255,255,255,0) 64%), ${rgba(accent, 0.82)}`,
+        backdropFilter: "blur(16px) saturate(1.35)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.35)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35), 0 10px 30px -12px rgba(34,56,47,0.22)",
+        border: "1px solid rgba(255,255,255,0.20)",
+      }}>
       {/* The whole rectangle carries the priority shade. Tap to expand. */}
       <button onClick={() => setExpanded((e) => !e)}
         className="w-full text-left flex items-center gap-3 p-5">
@@ -201,7 +219,12 @@ function ProjectCard({
               <div className="h-2 rounded-full overflow-hidden"
                 style={{ background: dark ? "rgba(255,255,255,0.22)" : "rgba(11,43,38,0.16)" }}>
                 <div className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, background: dark ? "#DAF1DE" : "#0B2B26" }} />
+                  style={{
+                    width: `${pct}%`,
+                    background: dark
+                      ? "linear-gradient(90deg,#8EB69B,#DAF1DE)"
+                      : "linear-gradient(90deg,#235347,#0B2B26)",
+                  }} />
               </div>
             </>
           )}
@@ -220,8 +243,9 @@ function ProjectCard({
       <div className="space-y-2">
         {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">
-            <button onClick={() => onCompleteTask(task.id)} className="text-ink-faint hover:text-moss" title="Mark done">○</button>
-            <span>{task.title}</span>
+            <button onClick={() => onCompleteTask(task.id)} title="Mark done"
+              className="h-6 w-6 shrink-0 rounded-full border-2 border-moss/60 hover:border-moss hover:bg-moss/15 transition" />
+            <span className="text-ink">{task.title}</span>
             {task.urgent && <span className="text-xs text-clay">urgent</span>}
           </div>
         ))}
