@@ -364,7 +364,7 @@ export default function TodayClient({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={items.map((it) => it.title)} strategy={verticalListSortingStrategy}>
           {hero ? (
-            <div>
+            <div className="rise-in">
               <div className="eyebrow mb-2">{copy.today.heroEyebrow}</div>
               <HeroFocus item={hero}
                 onDone={() => done(hero, 0)} onSkip={() => skip(hero, 0)}
@@ -386,8 +386,10 @@ export default function TodayClient({
             <div className="space-y-2.5">
               <div className="eyebrow">{copy.today.more}</div>
               {rest.map((it, i) => (
-                <RowFocus key={it.title} item={it}
-                  onDone={() => done(it, i + 1)} onSkip={() => skip(it, i + 1)} onOpen={() => openProject(it)} />
+                <div key={it.title} className="rise-in" style={{ animationDelay: `${Math.min(i + 1, 8) * 55}ms` }}>
+                  <RowFocus item={it}
+                    onDone={() => done(it, i + 1)} onSkip={() => skip(it, i + 1)} onOpen={() => openProject(it)} />
+                </div>
               ))}
             </div>
           )}
@@ -485,11 +487,6 @@ function RowFocus({ item, onDone, onSkip, onOpen }: {
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.85 : 1, zIndex: isDragging ? 30 : undefined }}
       onClick={onOpen} role="button"
       className="card p-4 flex items-center gap-2.5 cursor-pointer">
-      <button {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
-        className="text-ink-faint hover:text-ink-soft cursor-grab active:cursor-grabbing shrink-0 -ml-1"
-        style={{ touchAction: "none" }}>
-        <Grip />
-      </button>
       <button onClick={(e) => { e.stopPropagation(); onDone(); }}
         className="h-9 w-9 rounded-full bg-moss/12 text-moss flex items-center justify-center hover:bg-moss/20 transition shrink-0"
         title={copy.today.done}>
@@ -500,6 +497,12 @@ function RowFocus({ item, onDone, onSkip, onOpen }: {
         <div className="text-sm text-ink-faint truncate">{item.project ?? item.why}</div>
       </div>
       <button onClick={(e) => { e.stopPropagation(); onSkip(); }} className="text-ink-faint hover:text-ink-soft text-xs px-2">{copy.today.notNow}</button>
+      {/* Drag handle on the right for easy thumb reach. */}
+      <button {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
+        className="text-ink-faint hover:text-ink-soft cursor-grab active:cursor-grabbing shrink-0 -mr-1"
+        style={{ touchAction: "none" }}>
+        <Grip />
+      </button>
     </div>
   );
 }

@@ -186,14 +186,16 @@ export default function PlateClient({ userId }: { userId: string }) {
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
           <SortableContext items={ranked.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-1">
-              {ranked.map((p) => (
-                <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
-                  accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
-                  tasks={tasks.filter((t) => t.project_id === p.id)}
-                  onAddTask={(title) => addTask(p.id, title)}
-                  onCompleteTask={completeTask}
-                  onReopenTask={reopenTask}
-                  onFinish={() => finishProject(p.id, p.name)} />
+              {ranked.map((p, i) => (
+                <div key={p.id} className="rise-in" style={{ animationDelay: `${Math.min(i, 8) * 55}ms` }}>
+                  <ProjectCard project={p} highlighted={highlight === p.id}
+                    accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
+                    tasks={tasks.filter((t) => t.project_id === p.id)}
+                    onAddTask={(title) => addTask(p.id, title)}
+                    onCompleteTask={completeTask}
+                    onReopenTask={reopenTask}
+                    onFinish={() => finishProject(p.id, p.name)} />
+                </div>
               ))}
             </div>
           </SortableContext>
@@ -258,11 +260,6 @@ function ProjectCard({
           background: `linear-gradient(160deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 24%, rgba(255,255,255,0) 52%), ${accent}`,
           boxShadow: "inset 0 1px 0 rgba(255,255,255,0.30)",
         }}>
-        <span {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
-          className={`shrink-0 -ml-1 cursor-grab active:cursor-grabbing ${dark ? "text-white/50 hover:text-white/80" : "text-pine/40 hover:text-pine/70"}`}
-          style={{ touchAction: "none" }}>
-          <Grip />
-        </span>
         <div className="flex-1 min-w-0">
           <h2 className={`text-lg font-semibold truncate ${ink}`}>{project.name}</h2>
           {total > 0 && (
@@ -288,11 +285,19 @@ function ProjectCard({
           className={`shrink-0 transition-transform ${inkSoft} ${expanded ? "rotate-180" : ""}`}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
+        {/* Drag handle on the right for easy thumb reach. */}
+        <span {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
+          className={`shrink-0 -mr-1 cursor-grab active:cursor-grabbing ${dark ? "text-white/50 hover:text-white/80" : "text-pine/40 hover:text-pine/70"}`}
+          style={{ touchAction: "none" }}>
+          <Grip />
+        </span>
       </button>
 
       {/* Expanded body — the same frosted-glass white in every box (it sits over
-          the page, not the colored header, so it never picks up the box tint). */}
-      {!expanded ? null : (
+          the page, not the colored header, so it never picks up the box tint).
+          The grid-rows trick animates the open/close smoothly. */}
+      <div className={`expandable ${expanded ? "is-open" : ""}`}>
+      <div className="expandable-inner">
       <div className="px-5 py-5"
         style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)" }}>
       <div className="space-y-2">
@@ -340,7 +345,8 @@ function ProjectCard({
         </div>
       </div>
       </div>
-      )}
+      </div>
+      </div>
     </div>
   );
 }

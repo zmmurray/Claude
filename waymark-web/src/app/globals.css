@@ -122,8 +122,23 @@ body {
   100% { transform: translateY(-3px); opacity: 0; }
 }
 .word-pop { animation: wordPop 1.35s ease-out both; }
+
+/* Gentle entrance: items rise + fade into place when a page loads. Stagger via
+   an inline animation-delay on each item. */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in { animation: riseIn 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+/* Smooth expand/collapse using a grid row that grows from 0fr → 1fr. */
+.expandable { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.32s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.expandable.is-open { grid-template-rows: 1fr; }
+.expandable > .expandable-inner { overflow: hidden; }
+
 @media (prefers-reduced-motion: reduce) {
-  .summit-rise, .summit-glow, .summit-spark, .summit-flag, .task-pop, .confetti, .word-pop { animation: none; opacity: 1; }
+  .summit-rise, .summit-glow, .summit-spark, .summit-flag, .task-pop, .confetti, .word-pop, .rise-in { animation: none; opacity: 1; }
+  .expandable { transition: none; }
 }
 
 .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-medium transition; }
