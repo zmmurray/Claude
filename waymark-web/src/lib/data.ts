@@ -52,6 +52,14 @@ export async function applyUpdate(
     .from("tasks").select("title").eq("user_id", userId).eq("done", true);
   const doneTitles = new Set((doneTasks ?? []).map((t: any) => norm(String(t.title))));
 
+  // Same for finished projects: once you mark a project done it should stay gone,
+  // even if it's still mentioned earlier in the chat history. Without this, the
+  // extraction would re-create it (we match only active projects below, so a done
+  // name never matches → a fresh duplicate appears right after you complete it).
+  const { data: doneProjects } = await supabase
+    .from("projects").select("name").eq("user_id", userId).eq("is_done", true);
+  const doneProjectNames = new Set((doneProjects ?? []).map((p: any) => norm(String(p.name))));
+
   // Durable "about me" context that informs every future recommendation.
   if (typeof update.context === "string" && update.context.trim()) {
     await supabase.from("profiles").upsert({ id: userId, context: update.context.trim() });
@@ -81,6 +89,8 @@ export async function applyUpdate(
   for (const p of update.projects ?? []) {
     const name = (p.name ?? "").trim();
     if (!name) continue;
+    // Don't resurrect a project the user already finished.
+    if (doneProjectNames.has(norm(name))) continue;
     const goalId = p.goal ? goalIdByName.get(p.goal.toLowerCase()) ?? null : null;
     const deadlineType = ["none", "soft", "hard"].includes(p.deadlineType ?? "") ? p.deadlineType! : undefined;
     const existing = projByName.get(norm(name));

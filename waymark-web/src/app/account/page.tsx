@@ -20,7 +20,7 @@ export default async function AccountPage() {
           <button type="submit" className="btn-quiet">{copy.account.signOut}</button>
         </form>
         <AccountTools />
-        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-29-ai</p>
+        <p className="mt-6 text-xs text-ink-faint">Waymark · build jun-30-a</p>
       </div>
     </AppShell>
   );

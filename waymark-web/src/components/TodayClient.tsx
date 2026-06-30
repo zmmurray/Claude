@@ -337,7 +337,6 @@ export default function TodayClient({
       </div>
 
       {undoBar}
-      {!resting && gist && <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>}
 
       {resting && (
         <div className="card-strong p-8 text-center">
@@ -394,6 +393,15 @@ export default function TodayClient({
           )}
         </SortableContext>
       </DndContext>
+      )}
+
+      {/* The "why" sits quietly below the list — there if you want it, out of the
+          way if you don't. */}
+      {!resting && gist && (
+        <div>
+          <div className="eyebrow mb-1.5">{copy.today.why}</div>
+          <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>
+        </div>
       )}
 
       {!resting && (

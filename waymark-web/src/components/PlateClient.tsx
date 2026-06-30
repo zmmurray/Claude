@@ -31,8 +31,6 @@ export default function PlateClient({ userId }: { userId: string }) {
   const sb = createSupabaseBrowser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [showAllPri, setShowAllPri] = useState(false);
-  const [reason, setReason] = useState("");
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
@@ -61,30 +59,6 @@ export default function PlateClient({ userId }: { userId: string }) {
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
-
-  // Real "why these are the priority" reason from the strategist, cached locally
-  // and only regenerated when the ranking inputs (importance/deadline) change.
-  useEffect(() => {
-    if (loading) return;
-    if (!projects.length) { setReason(""); return; }
-    const sig = [...projects].sort(byPriority)
-      .map((p) => `${p.id}:${p.importance}:${p.deadline ?? ""}`).join("|");
-    try {
-      const cached = JSON.parse(localStorage.getItem("waymark_pri") || "null");
-      if (cached?.sig === sig && cached.reason) { setReason(cached.reason); return; }
-    } catch {}
-    let cancelled = false;
-    fetch("/api/priorities", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" })
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        const text = (d?.reason as string) || "";
-        setReason(text);
-        try { localStorage.setItem("waymark_pri", JSON.stringify({ sig, reason: text })); } catch {}
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [loading, projects]);
 
   // If we arrived from a "Right now" card (/plate#proj-<id>), scroll to it and
   // give it a brief highlight so it's obvious which project we landed on.
@@ -131,15 +105,6 @@ export default function PlateClient({ userId }: { userId: string }) {
     load();
   }
 
-  // Tap a priority row to scroll to that project and flash it.
-  function jumpTo(id: string) {
-    const el = document.getElementById(`proj-${id}`);
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    setHighlight(id);
-    setTimeout(() => setHighlight(null), 2000);
-  }
-
   if (loading) return <div className="on-bg-soft">Loading…</div>;
 
   const ranked = [...projects].sort(byPriority);
@@ -160,31 +125,24 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
+        {ranked.length > 1 && <span className="text-[11px] text-ink-faint">Darker = higher priority</span>}
+      </div>
 
-      {ranked.length > 0 && (
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-2">
-            <div className="eyebrow">Priorities</div>
-            <div className="text-[11px] text-ink-faint">Darker = higher</div>
-          </div>
-          {reason && <p className="text-sm text-ink-soft leading-relaxed mb-3">{reason}</p>}
-          <div className="space-y-1">
-            {(showAllPri ? ranked : ranked.slice(0, 4)).map((p) => (
-              <button key={p.id} onClick={() => jumpTo(p.id)}
-                className="w-full flex items-center gap-3 text-left rounded-xl px-2 py-1.5 hover:bg-white/40 transition">
-                <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: priorityShade(p.importance) }} />
-                <span className="text-sm text-pine flex-1 truncate">{p.name}</span>
-              </button>
-            ))}
-          </div>
-          {ranked.length > 4 && (
-            <button onClick={() => setShowAllPri((s) => !s)} className="text-xs font-medium text-moss mt-2">
-              {showAllPri ? "Show fewer" : `Show all ${ranked.length}`}
-            </button>
-          )}
-        </div>
-      )}
+      {/* Priority order, top to bottom. Each box is collapsed to its essentials —
+          tap to open it up. */}
+      {ranked.map((p) => (
+        <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
+          accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
+          tasks={tasks.filter((t) => t.project_id === p.id)}
+          onAddTask={(title) => addTask(p.id, title)}
+          onCompleteTask={completeTask}
+          onReopenTask={reopenTask}
+          onFinish={() => finishProject(p.id, p.name)} />
+      ))}
+
+      {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
 
       <div className="card p-4">
         <div className="flex gap-2">
@@ -195,23 +153,12 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
         <p className="text-xs text-ink-faint mt-2">{copy.plate.addProjectHint}</p>
       </div>
-
-      {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
-
-      {projects.map((p) => (
-        <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
-          tasks={tasks.filter((t) => t.project_id === p.id)}
-          onAddTask={(title) => addTask(p.id, title)}
-          onCompleteTask={completeTask}
-          onReopenTask={reopenTask}
-          onFinish={() => finishProject(p.id, p.name)} />
-      ))}
     </div>
   );
 }
 
 function ProjectCard({
-  project, tasks, onAddTask, onCompleteTask, onReopenTask, onFinish, highlighted,
+  project, tasks, onAddTask, onCompleteTask, onReopenTask, onFinish, highlighted, accent, defaultOpen,
 }: {
   project: Project;
   tasks: TaskItem[];
@@ -220,9 +167,12 @@ function ProjectCard({
   onReopenTask: (id: string) => void;
   onFinish: () => void;
   highlighted?: boolean;
+  accent: string;
+  defaultOpen?: boolean;
 }) {
   const [t, setT] = useState("");
   const [showDone, setShowDone] = useState(false);
+  const [expanded, setExpanded] = useState(!!defaultOpen);
 
   const open = tasks.filter((task) => !task.done);
   const done = tasks.filter((task) => task.done);
@@ -231,19 +181,30 @@ function ProjectCard({
 
   return (
     <div id={`proj-${project.id}`}
-      className={`card p-5 scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}>
-      <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold flex-1">{project.name}</h2>
-        <span className="text-sm text-ink-faint">importance {project.importance}/5</span>
-      </div>
+      className={`card overflow-hidden scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
+      style={{ borderLeft: `6px solid ${accent}` }}>
+      {/* Collapsed header — the essentials, tap to expand. */}
+      <button onClick={() => setExpanded((e) => !e)}
+        className="w-full text-left flex items-center gap-3 p-5">
+        <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: accent }} />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-semibold text-pine truncate">{project.name}</h2>
+          {total > 0 && (
+            <div className="text-xs text-ink-faint mt-0.5">{done.length} of {total} done · {pct}%</div>
+          )}
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          className={`text-ink-faint shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
 
+      {!expanded ? null : (
+      <div className="px-5 pb-5">
       {/* Progress toward done */}
       {total > 0 && (
-        <div className="mt-3">
-          <div className="flex justify-between text-xs text-ink-faint mb-1.5">
-            <span>{done.length} of {total} done</span>
-            <span>{pct}%</span>
-          </div>
+        <div className="mb-3">
           <div className="h-2 rounded-full bg-moss/15 overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500"
               style={{ width: `${pct}%`, background: "linear-gradient(90deg,#8EB69B,#235347)" }} />
@@ -251,7 +212,7 @@ function ProjectCard({
         </div>
       )}
 
-      <div className="mt-3 space-y-2">
+      <div className="space-y-2">
         {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">
             <button onClick={() => onCompleteTask(task.id)} className="text-ink-faint hover:text-moss" title="Mark done">○</button>
@@ -294,6 +255,8 @@ function ProjectCard({
           <button className="btn-quiet whitespace-nowrap" onClick={onFinish}>{copy.plate.finish}</button>
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }
