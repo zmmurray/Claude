@@ -25,7 +25,7 @@ export const copy = {
     emptyBody: "Tell me what you're juggling — your projects and what you're aiming for — and I'll tell you where to put your time.",
     emptyCta: "What are you working on?",
     heroEyebrow: "Today's Waymark",
-    why: "Why this",
+    why: "Summary",
     done: "Done",
     notNow: "Not now",
     more: "Next up",
