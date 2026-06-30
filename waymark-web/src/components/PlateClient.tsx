@@ -19,6 +19,13 @@ function priorityShade(importance: number): string {
   }
 }
 
+// Translucent version of a shade, for the frosted-glass fills.
+function rgba(hex: string, a: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 // Rank: importance (desc), then sooner deadline first.
 function byPriority(a: Project, b: Project) {
   if (b.importance !== a.importance) return b.importance - a.importance;
@@ -125,22 +132,23 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
-        {ranked.length > 1 && <span className="text-[11px] text-ink-faint">Darker = higher priority</span>}
-      </div>
+      <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
 
-      {/* Priority order, top to bottom. Each box is collapsed to its essentials —
-          tap to open it up. */}
-      {ranked.map((p) => (
-        <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
-          accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
-          tasks={tasks.filter((t) => t.project_id === p.id)}
-          onAddTask={(title) => addTask(p.id, title)}
-          onCompleteTask={completeTask}
-          onReopenTask={reopenTask}
-          onFinish={() => finishProject(p.id, p.name)} />
-      ))}
+      {/* Priority order, top to bottom — one flush, frosted-glass stack with
+          hairline dividers between boxes. */}
+      {ranked.length > 0 && (
+        <div className="rounded-[24px] overflow-hidden shadow-soft divide-y divide-white/15">
+          {ranked.map((p) => (
+            <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
+              accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
+              tasks={tasks.filter((t) => t.project_id === p.id)}
+              onAddTask={(title) => addTask(p.id, title)}
+              onCompleteTask={completeTask}
+              onReopenTask={reopenTask}
+              onFinish={() => finishProject(p.id, p.name)} />
+          ))}
+        </div>
+      )}
 
       {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
 
@@ -186,11 +194,11 @@ function ProjectCard({
 
   return (
     <div id={`proj-${project.id}`}
-      className={`overflow-hidden rounded-[24px] scroll-mt-24 shadow-soft transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
-      style={{ background: accent }}>
-      {/* The whole rectangle carries the priority shade. Tap to expand. */}
+      className={`scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage ring-inset" : ""}`}>
+      {/* Frosted-glass rectangle carrying the priority shade. Tap to expand. */}
       <button onClick={() => setExpanded((e) => !e)}
-        className="w-full text-left flex items-center gap-3 p-5">
+        className="w-full text-left flex items-center gap-3 p-5"
+        style={{ background: rgba(accent, 0.62), backdropFilter: "blur(18px) saturate(1.4)", WebkitBackdropFilter: "blur(18px) saturate(1.4)" }}>
         <div className="flex-1 min-w-0">
           <h2 className={`text-lg font-semibold truncate ${ink}`}>{project.name}</h2>
           {total > 0 && (
@@ -213,9 +221,10 @@ function ProjectCard({
         </svg>
       </button>
 
-      {/* Expanded body drops to a readable light panel so to-dos and inputs stay legible. */}
+      {/* Expanded body — a lighter frosted panel so to-dos and inputs stay legible. */}
       {!expanded ? null : (
-      <div className="bg-white/85 px-5 py-5">
+      <div className="px-5 py-5"
+        style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(18px) saturate(1.4)", WebkitBackdropFilter: "blur(18px) saturate(1.4)" }}>
       <div className="space-y-2">
         {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">
