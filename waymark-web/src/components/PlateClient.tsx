@@ -179,39 +179,43 @@ function ProjectCard({
   const total = tasks.length;
   const pct = total ? Math.round((done.length / total) * 100) : 0;
 
+  // Higher-priority shades are dark → light text; lighter shades → dark text.
+  const dark = project.importance >= 3;
+  const ink = dark ? "text-white" : "text-pine-darkest";
+  const inkSoft = dark ? "text-white/75" : "text-pine/70";
+
   return (
     <div id={`proj-${project.id}`}
-      className={`card overflow-hidden scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
-      style={{ borderLeft: `6px solid ${accent}` }}>
-      {/* Collapsed header — the essentials, tap to expand. */}
+      className={`overflow-hidden rounded-[24px] scroll-mt-24 shadow-soft transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
+      style={{ background: accent }}>
+      {/* The whole rectangle carries the priority shade. Tap to expand. */}
       <button onClick={() => setExpanded((e) => !e)}
         className="w-full text-left flex items-center gap-3 p-5">
-        <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ background: accent }} />
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-pine truncate">{project.name}</h2>
+          <h2 className={`text-lg font-semibold truncate ${ink}`}>{project.name}</h2>
           {total > 0 && (
-            <div className="text-xs text-ink-faint mt-0.5">{done.length} of {total} done · {pct}%</div>
+            <>
+              <div className={`text-xs mt-1 mb-1.5 ${inkSoft}`}>{done.length} of {total} done · {pct}%</div>
+              {/* Progress bar — translucent track over the shade so it stays visible
+                  on both dark and light boxes; fill is a contrasting tone. */}
+              <div className="h-2 rounded-full overflow-hidden"
+                style={{ background: dark ? "rgba(255,255,255,0.22)" : "rgba(11,43,38,0.16)" }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, background: dark ? "#DAF1DE" : "#0B2B26" }} />
+              </div>
+            </>
           )}
         </div>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          className={`text-ink-faint shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`}>
+          className={`shrink-0 transition-transform ${inkSoft} ${expanded ? "rotate-180" : ""}`}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
 
+      {/* Expanded body drops to a readable light panel so to-dos and inputs stay legible. */}
       {!expanded ? null : (
-      <div className="px-5 pb-5">
-      {/* Progress toward done */}
-      {total > 0 && (
-        <div className="mb-3">
-          <div className="h-2 rounded-full bg-moss/15 overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: "linear-gradient(90deg,#8EB69B,#235347)" }} />
-          </div>
-        </div>
-      )}
-
+      <div className="bg-white/85 px-5 py-5">
       <div className="space-y-2">
         {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">

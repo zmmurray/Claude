@@ -396,11 +396,11 @@ export default function TodayClient({
       )}
 
       {/* The "why" sits quietly below the list — there if you want it, out of the
-          way if you don't. */}
+          way if you don't. In a frosted card so it stays easy to read. */}
       {!resting && gist && (
-        <div>
+        <div className="card p-4">
           <div className="eyebrow mb-1.5">{copy.today.why}</div>
-          <p className="on-bg-soft leading-relaxed text-[15px]">{gist}</p>
+          <p className="text-ink leading-relaxed text-[15px]">{gist}</p>
         </div>
       )}
 
