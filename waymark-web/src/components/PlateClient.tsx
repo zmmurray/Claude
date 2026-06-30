@@ -13,39 +13,21 @@ import { norm } from "@/lib/data";
 import SummitCelebration from "./SummitCelebration";
 import type { Project, TaskItem } from "@/lib/types";
 
-const ORDER_KEY = "waymark_proj_order";
-const TASK_ORDER_KEY = "waymark_task_order";
-
-// Read/write the per-project manual task order: { [projectId]: taskId[] }.
-function readTaskOrder(): Record<string, string[]> {
-  try { return JSON.parse(localStorage.getItem(TASK_ORDER_KEY) || "{}") || {}; } catch { return {}; }
-}
-function writeTaskOrder(m: Record<string, string[]>) {
-  try { localStorage.setItem(TASK_ORDER_KEY, JSON.stringify(m)); } catch {}
-}
-
-// Order items by a saved id sequence; anything unplaced keeps its current order.
-function orderById<T extends { id: string }>(items: T[], ids: string[]): T[] {
-  if (!ids.length) return items;
-  const pos = new Map(ids.map((id, i) => [id, i]));
-  return [...items].sort((a, b) => {
-    const ai = pos.has(a.id) ? pos.get(a.id)! : Infinity;
-    const bi = pos.has(b.id) ? pos.get(b.id)! : Infinity;
-    return ai - bi;
-  });
+// Order projects by their saved sort_order (synced in the DB). Until the user
+// has dragged anything, every sort_order is null → fall back to the default
+// importance/deadline ranking.
+function applyOrder(projects: Project[]): Project[] {
+  const placed = projects.some((p) => p.sort_order != null);
+  if (!placed) return [...projects].sort(byPriority);
+  return [...projects].sort((a, b) =>
+    (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity) || byPriority(a, b));
 }
 
-// Apply a saved manual order: projects in the saved sequence first (in that
-// order), then anything new the user hasn't placed yet, by default priority.
-function applyOrder(projects: Project[], orderIds: string[]): Project[] {
-  if (!orderIds.length) return [...projects].sort(byPriority);
-  const pos = new Map(orderIds.map((id, i) => [id, i]));
-  return [...projects].sort((a, b) => {
-    const ai = pos.has(a.id) ? pos.get(a.id)! : Infinity;
-    const bi = pos.has(b.id) ? pos.get(b.id)! : Infinity;
-    if (ai !== bi) return ai - bi;
-    return byPriority(a, b);
-  });
+// Order to-dos by their saved sort_order; unplaced ones keep their natural order.
+function orderTasks(items: TaskItem[]): TaskItem[] {
+  const placed = items.some((t) => t.sort_order != null);
+  if (!placed) return items;
+  return [...items].sort((a, b) => (a.sort_order ?? Infinity) - (b.sort_order ?? Infinity));
 }
 
 const Grip = () => (
@@ -85,28 +67,36 @@ export default function PlateClient({ userId }: { userId: string }) {
   const [showCompleted, setShowCompleted] = useState(false);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
-  const [orderIds, setOrderIds] = useState<string[]>([]);
 
-  // Restore the saved manual order once on mount.
-  useEffect(() => {
+  // Persist a new id order to a table's sort_order column (synced across devices).
+  // Guarded so the UI still works if the sort_order migration hasn't run yet.
+  async function persistOrder(table: "projects" | "tasks", ids: string[]) {
     try {
-      const saved = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
-      if (Array.isArray(saved)) setOrderIds(saved.map(String));
+      await Promise.all(ids.map((id, i) => sb.from(table).update({ sort_order: i }).eq("id", id)));
     } catch {}
-  }, []);
+  }
 
-  // Drag-to-reorder the project list; persist the new order locally.
+  // Drag-to-reorder the project list; write the new order to the DB so it syncs.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
-    const current = applyOrder(projects, orderIds).map((p) => p.id);
+    const current = applyOrder(projects).map((p) => p.id);
     const oldIndex = current.indexOf(String(active.id));
     const newIndex = current.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
     const next = arrayMove(current, oldIndex, newIndex);
-    setOrderIds(next);
-    try { localStorage.setItem(ORDER_KEY, JSON.stringify(next)); } catch {}
+    // Optimistically restamp sort_order in local state, then persist.
+    const rank = new Map(next.map((id, i) => [id, i]));
+    setProjects((cur) => cur.map((p) => ({ ...p, sort_order: rank.get(p.id) ?? p.sort_order })));
+    persistOrder("projects", next);
+  }
+
+  // Reorder the open to-dos within one project (called from a card).
+  function reorderTasks(projectId: string, orderedIds: string[]) {
+    const rank = new Map(orderedIds.map((id, i) => [id, i]));
+    setTasks((cur) => cur.map((t) => (rank.has(t.id) ? { ...t, sort_order: rank.get(t.id)! } : t)));
+    persistOrder("tasks", orderedIds);
   }
 
   async function load() {
@@ -191,7 +181,7 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   if (loading) return <div className="on-bg-soft">Loading…</div>;
 
-  const ranked = applyOrder(projects, orderIds);
+  const ranked = applyOrder(projects);
 
   return (
     <div className="space-y-5">
@@ -235,6 +225,7 @@ export default function PlateClient({ userId }: { userId: string }) {
                     onAddTask={(title) => addTask(p.id, title)}
                     onCompleteTask={completeTask}
                     onReopenTask={reopenTask}
+                    onReorderTasks={(ids) => reorderTasks(p.id, ids)}
                     onFinish={() => finishProject(p.id, p.name)} />
                 </div>
               ))}
@@ -314,13 +305,14 @@ function ConfettiRain() {
 }
 
 function ProjectCard({
-  project, tasks, onAddTask, onCompleteTask, onReopenTask, onFinish, highlighted, accent, defaultOpen,
+  project, tasks, onAddTask, onCompleteTask, onReopenTask, onReorderTasks, onFinish, highlighted, accent, defaultOpen,
 }: {
   project: Project;
   tasks: TaskItem[];
   onAddTask: (t: string) => void;
   onCompleteTask: (id: string) => void;
   onReopenTask: (id: string) => void;
+  onReorderTasks: (orderedIds: string[]) => void;
   onFinish: () => void;
   highlighted?: boolean;
   accent: string;
@@ -339,10 +331,8 @@ function ProjectCard({
   const total = tasks.length;
   const pct = total ? Math.round((done.length / total) * 100) : 0;
 
-  // Manual order of the open to-dos within this project (drag to reorder).
-  const [taskOrder, setTaskOrder] = useState<string[]>([]);
-  useEffect(() => { setTaskOrder(readTaskOrder()[project.id] ?? []); }, [project.id]);
-  const open = orderById(tasks.filter((task) => !task.done), taskOrder);
+  // Open to-dos in their saved (synced) order; drag to reorder within the project.
+  const open = orderTasks(tasks.filter((task) => !task.done));
 
   const taskSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
   function onTaskDragEnd(e: DragEndEvent) {
@@ -352,9 +342,7 @@ function ProjectCard({
     const oldIndex = ids.indexOf(String(active.id));
     const newIndex = ids.indexOf(String(over.id));
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = arrayMove(ids, oldIndex, newIndex);
-    setTaskOrder(next);
-    const m = readTaskOrder(); m[project.id] = next; writeTaskOrder(m);
+    onReorderTasks(arrayMove(ids, oldIndex, newIndex));
   }
 
   // Higher-priority shades are dark → light text; lighter shades → dark text.

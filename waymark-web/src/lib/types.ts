@@ -12,6 +12,7 @@ export interface Project {
   deadline: string | null; // yyyy-mm-dd
   notes: string;
   is_done: boolean;
+  sort_order: number | null;
   created_at: string;
 }
 
@@ -22,6 +23,7 @@ export interface TaskItem {
   done: boolean;
   urgent: boolean;
   effort: Effort;
+  sort_order: number | null;
   created_at: string;
   completed_at: string | null;
 }

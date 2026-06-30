@@ -63,6 +63,11 @@ create table if not exists focus_snapshots (
   created_at timestamptz not null default now()
 );
 
+-- Manual ordering (drag-to-reorder), synced across devices. Null = not yet
+-- placed by hand → fall back to the default ranking / natural order.
+alter table projects add column if not exists sort_order int;
+alter table tasks add column if not exists sort_order int;
+
 -- Indexes
 create index if not exists idx_projects_user on projects(user_id);
 create index if not exists idx_tasks_user on tasks(user_id);
