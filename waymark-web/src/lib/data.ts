@@ -36,13 +36,42 @@ export async function loadContext(supabase: SupabaseClient, userId: string) {
 }
 
 /** Apply a strategist-proposed update: create new goals/projects/tasks. Returns counts. */
+export type AddedTask = { id: string; project_id: string; project: string; title: string; urgent: boolean };
+export type ApplyResult = {
+  goals: number; projects: number; tasks: number; context: boolean; names: string[];
+  completed: { id: string; project_id: string; title: string }[];
+  added: AddedTask[];
+};
+
 export async function applyUpdate(
   supabase: SupabaseClient,
   userId: string,
   update: ContextUpdate
-): Promise<{ goals: number; projects: number; tasks: number; context: boolean; names: string[] }> {
+): Promise<ApplyResult> {
   let goalCount = 0, projectCount = 0, taskCount = 0, contextSaved = false;
   const touched = new Set<string>(); // names of projects created or changed
+  const completed: { id: string; project_id: string; title: string }[] = [];
+  const added: AddedTask[] = [];
+
+  // Tasks the user says are finished / already handled / no longer needed → mark
+  // them done so Right Now and the project stop showing them.
+  if (update.completedTasks?.length) {
+    const { data: openRows } = await supabase
+      .from("tasks").select("id,title,project_id").eq("user_id", userId).eq("done", false);
+    const openList = (openRows ?? []) as { id: string; title: string; project_id: string }[];
+    const used = new Set<string>();
+    for (const raw of update.completedTasks) {
+      const key = norm(String(raw));
+      if (!key) continue;
+      const match =
+        openList.find((t) => !used.has(t.id) && norm(t.title) === key) ??
+        openList.find((t) => !used.has(t.id) && (norm(t.title).includes(key) || key.includes(norm(t.title))));
+      if (!match) continue;
+      used.add(match.id);
+      await supabase.from("tasks").update({ done: true, completed_at: new Date().toISOString() }).eq("id", match.id);
+      completed.push({ id: match.id, project_id: match.project_id, title: match.title });
+    }
+  }
 
   // Global guard: titles of tasks the user already finished, across ALL projects.
   // The extraction pass reads the whole conversation, so a finished item can be
@@ -135,11 +164,14 @@ export async function applyUpdate(
       const title = (t.title ?? "").trim();
       if (!title || taskTitles.has(norm(title)) || doneTitles.has(norm(title))) continue;
       const effort = ["quick", "medium", "deep"].includes(t.effort ?? "") ? t.effort! : "medium";
-      const { error: te } = await supabase.from("tasks").insert({
+      const { data: ins, error: te } = await supabase.from("tasks").insert({
         user_id: userId, project_id: projectId, title, urgent: !!t.urgent, effort,
-      });
-      if (!te) { taskCount++; taskTitles.add(norm(title)); touched.add(name); }
+      }).select("id").single();
+      if (!te && ins) {
+        taskCount++; taskTitles.add(norm(title)); touched.add(name);
+        added.push({ id: ins.id, project_id: projectId, project: name, title, urgent: !!t.urgent });
+      }
     }
   }
-  return { goals: goalCount, projects: projectCount, tasks: taskCount, context: contextSaved, names: Array.from(touched) };
+  return { goals: goalCount, projects: projectCount, tasks: taskCount, context: contextSaved, names: Array.from(touched), completed, added };
 }

@@ -56,6 +56,8 @@ export interface ChatMessage {
 export interface ContextUpdate {
   /** A concise running "about me": situation, life goals, constraints, what they're after. */
   context?: string;
+  /** Titles of tasks the user says are done / already handled / no longer needed. */
+  completedTasks?: string[];
   goals?: { name: string; notes?: string }[];
   projects?: {
     name: string;

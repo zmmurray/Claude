@@ -170,6 +170,11 @@ From the user's latest message, output what should be saved:
   Treat natural statements of intent as tasks: "I need to eat a snack in 2 min", "I have to call
   the bank", "I should email Sam", "gotta pick up milk" all become tracked tasks. Never decide
   something isn't "worth tracking."
+- If the user says a task is DONE, already handled, or no longer needed ("I already have the
+  brief", "I did X", "finished Y", "scrap Z", "I just need to make it now" implies the prior step
+  is done), list that task's existing title under "completedTasks" so it gets checked off. Use the
+  wording from their world above so it matches. If they've moved past one step to the next, also add
+  the new next-step task.
 - Mark a task "urgent": true ONLY when the user wants it done imminently — a very short timeframe
   like "in 2 minutes", "in the next hour", "right now". Do NOT mark things urgent for general
   importance, "today", "this week", or future deadlines. Almost all tasks are NOT urgent; default
@@ -195,6 +200,7 @@ this" — still a task), output exactly:
 Output ONLY JSON (no prose, no code fences). If nothing should change, output exactly {}.
 {
   "context": "concise complete about-me — only if it changed",
+  "completedTasks": ["exact title of a task the user finished or no longer needs"],
   "goals": [{"name":"..."}],
   "projects": [{"name":"...","goal":"matching goal name","importance":1-5,"deadlineType":"none|soft|hard","deadline":"YYYY-MM-DD","notes":"...","tasks":[{"title":"...","urgent":false}]}]
 }`;

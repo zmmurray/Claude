@@ -47,16 +47,60 @@ export async function POST(req: Request) {
 
   let changed = false;
   let saved = "";
-  let applied = { goals: 0, projects: 0, tasks: 0, context: false, names: [] as string[] };
-  if (update && (typeof update.context === "string" || update.goals?.length || update.projects?.length)) {
-    applied = await applyUpdate(supabase, user.id, update);
-    changed = applied.names.length > 0 || applied.tasks > 0 || applied.goals > 0 || applied.context;
+  let applied = {
+    goals: 0, projects: 0, tasks: 0, context: false, names: [] as string[],
+    completed: [] as { id: string; project_id: string; title: string }[],
+    added: [] as { id: string; project_id: string; project: string; title: string; urgent: boolean }[],
+  };
+  const hasUpdate = !!update && (
+    typeof update.context === "string" || !!update.goals?.length || !!update.projects?.length || !!update.completedTasks?.length
+  );
+  if (hasUpdate) {
+    // The user's current focus BEFORE we change anything — so we can patch it in
+    // place rather than wiping and re-deciding the whole "Right now" from scratch.
+    const { data: snap } = await supabase
+      .from("focus_snapshots").select("id,items").eq("user_id", user.id)
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+    applied = await applyUpdate(supabase, user.id, update!);
+    changed = applied.names.length > 0 || applied.tasks > 0 || applied.goals > 0 || applied.context || applied.completed.length > 0;
+
     const parts: string[] = [];
+    if (applied.completed.length) parts.push(`${applied.completed.length} done`);
     if (applied.names.length) parts.push(applied.names.join(", "));
     if (applied.tasks) parts.push(`${applied.tasks} to-do${applied.tasks > 1 ? "s" : ""}`);
     saved = parts.length ? `Saved — ${parts.join(" · ")}` : applied.context ? "Noted." : "";
-    // Data changed → drop the old focus so Right Now regenerates fresh next visit.
-    if (changed) await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
+
+    // Keep Right Now stable: don't reshuffle. Remove finished items, swap in the
+    // next step for the same project when there is one, and lead with any brand-new
+    // urgent task. Only fully regenerate when there's no focus to patch.
+    if (snap && (applied.completed.length || applied.added.length)) {
+      const completedIds = new Set(applied.completed.map((c) => c.id));
+      const pool = [...applied.added];
+      let items: any[] = (Array.isArray(snap.items) ? snap.items : []).flatMap((it: any) => {
+        if (it.taskId && completedIds.has(it.taskId)) {
+          const projId = applied.completed.find((c) => c.id === it.taskId)?.project_id;
+          const repIdx = pool.findIndex((a) => a.project_id === projId && !a.urgent);
+          if (repIdx >= 0) {
+            const rep = pool.splice(repIdx, 1)[0];
+            return [{ title: rep.title, why: "The next step here.", kind: "needle", project: rep.project, taskId: rep.id }];
+          }
+          return [];
+        }
+        return [it];
+      });
+      const present = new Set(items.map((i) => i.taskId).filter(Boolean));
+      const urgentNew = applied.added
+        .filter((a) => a.urgent && !present.has(a.id))
+        .map((a) => ({ title: a.title, why: "You wanted this done now.", kind: "quick", project: a.project, taskId: a.id }));
+      items = [...urgentNew, ...items];
+
+      if (items.length === 0) await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
+      else await supabase.from("focus_snapshots").update({ items }).eq("id", snap.id);
+    } else if (changed && !snap) {
+      // No existing focus to preserve → let Right Now build fresh on next visit.
+      await supabase.from("focus_snapshots").delete().eq("user_id", user.id);
+    }
   }
 
   const reply = text || "Got it.";
