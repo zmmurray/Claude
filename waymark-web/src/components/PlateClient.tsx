@@ -2,11 +2,39 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { copy } from "@/lib/copy";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { norm } from "@/lib/data";
 import SummitCelebration from "./SummitCelebration";
 import type { Project, TaskItem } from "@/lib/types";
+
+const ORDER_KEY = "waymark_proj_order";
+
+// Apply a saved manual order: projects in the saved sequence first (in that
+// order), then anything new the user hasn't placed yet, by default priority.
+function applyOrder(projects: Project[], orderIds: string[]): Project[] {
+  if (!orderIds.length) return [...projects].sort(byPriority);
+  const pos = new Map(orderIds.map((id, i) => [id, i]));
+  return [...projects].sort((a, b) => {
+    const ai = pos.has(a.id) ? pos.get(a.id)! : Infinity;
+    const bi = pos.has(b.id) ? pos.get(b.id)! : Infinity;
+    if (ai !== bi) return ai - bi;
+    return byPriority(a, b);
+  });
+}
+
+const Grip = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
+    <circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" />
+    <circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+  </svg>
+);
 
 // Priority → shade. Darker green = higher priority; same importance = same shade.
 function priorityShade(importance: number): string {
@@ -17,13 +45,6 @@ function priorityShade(importance: number): string {
     case 2: return "#8EB69B";
     default: return "#c3dcc9";
   }
-}
-
-// Translucent version of a hex shade, for the frosted-glass fills.
-function rgba(hex: string, a: number): string {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
 // Rank: importance (desc), then sooner deadline first.
@@ -41,6 +62,29 @@ export default function PlateClient({ userId }: { userId: string }) {
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [newProject, setNewProject] = useState("");
   const [loading, setLoading] = useState(true);
+  const [orderIds, setOrderIds] = useState<string[]>([]);
+
+  // Restore the saved manual order once on mount.
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(ORDER_KEY) || "[]");
+      if (Array.isArray(saved)) setOrderIds(saved.map(String));
+    } catch {}
+  }, []);
+
+  // Drag-to-reorder the project list; persist the new order locally.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  function onDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const current = applyOrder(projects, orderIds).map((p) => p.id);
+    const oldIndex = current.indexOf(String(active.id));
+    const newIndex = current.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+    const next = arrayMove(current, oldIndex, newIndex);
+    setOrderIds(next);
+    try { localStorage.setItem(ORDER_KEY, JSON.stringify(next)); } catch {}
+  }
 
   async function load() {
     const [{ data: p }, { data: t }] = await Promise.all([
@@ -114,7 +158,7 @@ export default function PlateClient({ userId }: { userId: string }) {
 
   if (loading) return <div className="on-bg-soft">Loading…</div>;
 
-  const ranked = [...projects].sort(byPriority);
+  const ranked = applyOrder(projects, orderIds);
 
   return (
     <div className="space-y-5">
@@ -132,21 +176,28 @@ export default function PlateClient({ userId }: { userId: string }) {
         </div>
       )}
 
-      <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
+        {ranked.length > 1 && <span className="text-[11px] text-ink-faint">Drag to reorder</span>}
+      </div>
 
-      {/* Priority order, top to bottom — separate boxes stacked with a hair of gap. */}
+      {/* Separate boxes stacked with a hair of gap; drag the grip to reorder. */}
       {ranked.length > 0 && (
-        <div className="space-y-1">
-          {ranked.map((p) => (
-            <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
-              accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
-              tasks={tasks.filter((t) => t.project_id === p.id)}
-              onAddTask={(title) => addTask(p.id, title)}
-              onCompleteTask={completeTask}
-              onReopenTask={reopenTask}
-              onFinish={() => finishProject(p.id, p.name)} />
-          ))}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <SortableContext items={ranked.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1">
+              {ranked.map((p) => (
+                <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
+                  accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
+                  tasks={tasks.filter((t) => t.project_id === p.id)}
+                  onAddTask={(title) => addTask(p.id, title)}
+                  onCompleteTask={completeTask}
+                  onReopenTask={reopenTask}
+                  onFinish={() => finishProject(p.id, p.name)} />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {projects.length === 0 && <p className="on-bg-soft">{copy.plate.empty}</p>}
@@ -184,6 +235,8 @@ function ProjectCard({
   // up automatically so the tap lands you inside the project, not just near it.
   useEffect(() => { if (defaultOpen) setExpanded(true); }, [defaultOpen]);
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.id });
+
   const open = tasks.filter((task) => !task.done);
   const done = tasks.filter((task) => task.done);
   const total = tasks.length;
@@ -195,20 +248,21 @@ function ProjectCard({
   const inkSoft = dark ? "text-white/75" : "text-pine/70";
 
   return (
-    <div id={`proj-${project.id}`}
-      className={`overflow-hidden rounded-[24px] shadow-soft scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
-      style={{
-        // Frosted glass: a translucent priority shade with a soft top sheen, a
-        // backdrop blur so the misty page shows through, and a light inner edge.
-        background: `linear-gradient(155deg, rgba(255,255,255,0.28), rgba(255,255,255,0.06) 38%, rgba(255,255,255,0) 64%), ${rgba(accent, 0.82)}`,
-        backdropFilter: "blur(16px) saturate(1.35)",
-        WebkitBackdropFilter: "blur(16px) saturate(1.35)",
-        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35), 0 10px 30px -12px rgba(34,56,47,0.22)",
-        border: "1px solid rgba(255,255,255,0.20)",
-      }}>
-      {/* The whole rectangle carries the priority shade. Tap to expand. */}
+    <div ref={setNodeRef} id={`proj-${project.id}`}
+      className={`overflow-hidden rounded-[24px] shadow-soft scroll-mt-24 ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.9 : 1, zIndex: isDragging ? 30 : undefined, position: "relative" }}>
+      {/* Rich priority shade with a glassy sheen on top + a light inner edge. */}
       <button onClick={() => setExpanded((e) => !e)}
-        className="w-full text-left flex items-center gap-3 p-5">
+        className="w-full text-left flex items-center gap-3 p-5"
+        style={{
+          background: `linear-gradient(160deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 24%, rgba(255,255,255,0) 52%), ${accent}`,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.30)",
+        }}>
+        <span {...attributes} {...listeners} onClick={(e) => e.stopPropagation()} aria-label="Drag to reorder"
+          className={`shrink-0 -ml-1 cursor-grab active:cursor-grabbing ${dark ? "text-white/50 hover:text-white/80" : "text-pine/40 hover:text-pine/70"}`}
+          style={{ touchAction: "none" }}>
+          <Grip />
+        </span>
         <div className="flex-1 min-w-0">
           <h2 className={`text-lg font-semibold truncate ${ink}`}>{project.name}</h2>
           {total > 0 && (
@@ -236,10 +290,11 @@ function ProjectCard({
         </svg>
       </button>
 
-      {/* Expanded body — a lighter frosted panel so to-dos and inputs stay legible. */}
+      {/* Expanded body — the same frosted-glass white in every box (it sits over
+          the page, not the colored header, so it never picks up the box tint). */}
       {!expanded ? null : (
       <div className="px-5 py-5"
-        style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(18px) saturate(1.4)", WebkitBackdropFilter: "blur(18px) saturate(1.4)" }}>
+        style={{ background: "rgba(255,255,255,0.72)", backdropFilter: "blur(20px) saturate(1.4)", WebkitBackdropFilter: "blur(20px) saturate(1.4)" }}>
       <div className="space-y-2">
         {open.map((task) => (
           <div key={task.id} className="flex items-center gap-3">
