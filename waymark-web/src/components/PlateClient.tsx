@@ -19,13 +19,6 @@ function priorityShade(importance: number): string {
   }
 }
 
-// Translucent version of a shade, for the frosted-glass fills.
-function rgba(hex: string, a: number): string {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
-
 // Rank: importance (desc), then sooner deadline first.
 function byPriority(a: Project, b: Project) {
   if (b.importance !== a.importance) return b.importance - a.importance;
@@ -134,10 +127,9 @@ export default function PlateClient({ userId }: { userId: string }) {
 
       <h1 className="text-xl font-bold uppercase tracking-[0.1em] text-pine">{copy.plate.title}</h1>
 
-      {/* Priority order, top to bottom — one flush, frosted-glass stack with
-          hairline dividers between boxes. */}
+      {/* Priority order, top to bottom — separate boxes stacked with a hair of gap. */}
       {ranked.length > 0 && (
-        <div className="rounded-[24px] overflow-hidden shadow-soft divide-y divide-white/15">
+        <div className="space-y-1">
           {ranked.map((p) => (
             <ProjectCard key={p.id} project={p} highlighted={highlight === p.id}
               accent={priorityShade(p.importance)} defaultOpen={highlight === p.id}
@@ -194,11 +186,11 @@ function ProjectCard({
 
   return (
     <div id={`proj-${project.id}`}
-      className={`scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage ring-inset" : ""}`}>
-      {/* Frosted-glass rectangle carrying the priority shade. Tap to expand. */}
+      className={`overflow-hidden rounded-[24px] shadow-soft scroll-mt-24 transition ${highlighted ? "ring-2 ring-sage shadow-lift" : ""}`}
+      style={{ background: accent }}>
+      {/* The whole rectangle carries the priority shade. Tap to expand. */}
       <button onClick={() => setExpanded((e) => !e)}
-        className="w-full text-left flex items-center gap-3 p-5"
-        style={{ background: rgba(accent, 0.62), backdropFilter: "blur(18px) saturate(1.4)", WebkitBackdropFilter: "blur(18px) saturate(1.4)" }}>
+        className="w-full text-left flex items-center gap-3 p-5">
         <div className="flex-1 min-w-0">
           <h2 className={`text-lg font-semibold truncate ${ink}`}>{project.name}</h2>
           {total > 0 && (
