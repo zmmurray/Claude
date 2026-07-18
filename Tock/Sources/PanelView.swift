@@ -7,6 +7,7 @@ struct PanelView: View {
 
     @State private var addingProject = false
     @State private var newProjectName = ""
+    @State private var listMode: ListMode = .sessions
     @FocusState private var newProjectFocused: Bool
 
     var body: some View {
@@ -15,7 +16,7 @@ struct PanelView: View {
             timerSection
             statsRow
             Divider()
-            sessionsList
+            listSection
             Divider()
             footer
         }
@@ -138,34 +139,96 @@ struct PanelView: View {
         }
     }
 
-    // MARK: Sessions
+    // MARK: Sessions / project totals
 
-    private var sessionsList: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Recent sessions")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private enum ListMode: String, CaseIterable, Identifiable {
+        case sessions = "Sessions"
+        case projects = "Projects"
+        var id: String { rawValue }
+    }
 
-            if store.recentSessions.isEmpty {
-                Text("No sessions yet")
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 12)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(store.recentSessions) { session in
-                            SessionRow(session: session)
-                            if session.id != store.recentSessions.last?.id {
-                                Divider()
-                            }
+    private var listSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("View", selection: $listMode) {
+                ForEach(ListMode.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+
+            switch listMode {
+            case .sessions: sessionsContent
+            case .projects: projectsContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var sessionsContent: some View {
+        if store.recentSessions.isEmpty {
+            emptyListText("No sessions yet")
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(store.recentSessions) { session in
+                        SessionRow(session: session)
+                        if session.id != store.recentSessions.last?.id {
+                            Divider()
                         }
                     }
                 }
-                .frame(maxHeight: 200)
             }
+            .frame(maxHeight: 200)
         }
+    }
+
+    /// Every project with its all-time total, biggest first (live-updating).
+    private var projectTotals: [(project: Project, total: TimeInterval)] {
+        store.projects
+            .map { ($0, store.total(for: $0.id)) }
+            .sorted { $0.total > $1.total }
+    }
+
+    @ViewBuilder
+    private var projectsContent: some View {
+        if store.projects.isEmpty {
+            emptyListText("No projects yet")
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    let rows = projectTotals
+                    ForEach(rows, id: \.project.id) { item in
+                        Button {
+                            store.selectedProjectId = item.project.id
+                        } label: {
+                            HStack {
+                                Text(item.project.name)
+                                    .lineLimit(1)
+                                    .fontWeight(item.project.id == store.selectedProjectId ? .semibold : .regular)
+                                Spacer()
+                                Text(Format.humanTotal(item.total))
+                                    .monospacedDigit()
+                                    .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 7)
+                        if item.project.id != rows.last?.project.id {
+                            Divider()
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 200)
+        }
+    }
+
+    private func emptyListText(_ text: String) -> some View {
+        Text(text)
+            .font(.callout)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 12)
     }
 
     // MARK: Footer
