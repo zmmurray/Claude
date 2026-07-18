@@ -65,6 +65,9 @@ Click the menu bar icon → the **⋯** menu → toggle **Launch at login**. Thi
 - Pick a project from the dropdown, or click **+** to create one.
 - **Start** begins a session; the menu bar switches to a filled stopwatch with
   the elapsed time ticking as `H:MM:SS`. **Stop** finalizes it.
+- Click **Open Window** for a larger, resizable window with a **projects
+  sidebar**: pick a project to see just its sessions (and its total/count), or
+  pick **All Sessions**. Drag the window to any size to see everything at once.
 - The panel shows today's total across all projects and the selected project's
   all-time total. Below that, a **Sessions / Projects** toggle switches the list
   between recent sessions and every project's all-time total (biggest first,

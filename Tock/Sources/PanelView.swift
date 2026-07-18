@@ -34,6 +34,16 @@ struct PanelView: View {
                 .padding(12)
                 .background(TockTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
+            Button {
+                MainWindowController.shared.show()
+            } label: {
+                Label("Open Window", systemImage: "macwindow")
+                    .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.bordered)
+            .help("Open a larger, resizable window to browse projects and sessions")
+
             footer
                 .padding(.top, 2)
         }
@@ -292,22 +302,29 @@ struct PanelView: View {
     }
 }
 
-/// One row in the recent-sessions list, with hover-revealed edit/delete buttons.
-private struct SessionRow: View {
+/// One row in a sessions list, with hover-revealed edit/delete buttons.
+/// `showsProject` hides the project name when the list is already one project.
+struct SessionRow: View {
     @EnvironmentObject var store: TimerStore
     let session: Session
+    var showsProject: Bool = true
     @State private var hovering = false
     @State private var isEditing = false
 
     var body: some View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(store.project(session.projectId)?.name ?? "Unknown")
-                    .font(.callout)
-                    .lineLimit(1)
-                Text(Format.listDate.string(from: session.startDate))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if showsProject {
+                    Text(store.project(session.projectId)?.name ?? "Unknown")
+                        .font(.callout)
+                        .lineLimit(1)
+                    Text(Format.listDate.string(from: session.startDate))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(Format.listDate.string(from: session.startDate))
+                        .font(.callout)
+                }
             }
             Spacer()
             Text(Format.liveClock(session.duration))
@@ -344,7 +361,7 @@ private struct SessionRow: View {
 
 /// Popover editor for fixing a session after the fact: change project, adjust
 /// start/end, or quickly trim minutes off the end (forgot-to-stop case).
-private struct SessionEditor: View {
+struct SessionEditor: View {
     @EnvironmentObject var store: TimerStore
     let session: Session
     let onClose: () -> Void
