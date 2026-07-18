@@ -1,6 +1,14 @@
 import SwiftUI
 import AppKit
 
+/// Dark palette for the panel.
+enum TockTheme {
+    /// Panel backdrop (near-black).
+    static let panel = Color(red: 0.09, green: 0.09, blue: 0.11)
+    /// Slightly elevated surface for the rounded cards.
+    static let card = Color(red: 0.16, green: 0.16, blue: 0.18)
+}
+
 /// The window that drops down from the menu bar icon.
 struct PanelView: View {
     @EnvironmentObject var store: TimerStore
@@ -11,17 +19,28 @@ struct PanelView: View {
     @FocusState private var newProjectFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             projectSelector
-            timerSection
-            statsRow
-            Divider()
+
+            VStack(spacing: 12) {
+                timerSection
+                statsRow
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(TockTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
             listSection
-            Divider()
+                .padding(12)
+                .background(TockTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
             footer
+                .padding(.top, 2)
         }
-        .padding(16)
+        .padding(14)
         .frame(width: 320)
+        .background(TockTheme.panel)
+        .preferredColorScheme(.dark)
     }
 
     // MARK: Project selector
