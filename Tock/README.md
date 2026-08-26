@@ -88,6 +88,15 @@ After an idle auto-stop, the next time you're active Tock posts a "Welcome back"
 notification with a **Resume tracking** button to pick that project back up with
 one click. Enabling auto-stop asks for notification permission the first time.
 
+### Break reminders
+
+Tock includes optional **20-20-20 break reminders** that run whether or not a
+project is being timed. Every 20 minutes a gentle full-screen overlay reminds
+you to look ~20 feet away for 20 seconds; every 90 minutes it prompts a
+5-minute movement break (with a Snooze option). Toggle it — and trigger a break
+on demand to preview it — from the **⋯** menu. A movement break also restarts
+the 20-minute eye-break clock.
+
 If you quit while a timer is running, the session is finalized and saved
 automatically (it is never resumed on next launch, to avoid logging idle
 overnight time).

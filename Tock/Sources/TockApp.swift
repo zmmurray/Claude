@@ -10,6 +10,7 @@ struct TockApp: App {
         MenuBarExtra {
             PanelView()
                 .environmentObject(store)
+                .environmentObject(BreakScheduler.shared)
         } label: {
             MenuBarLabel(store: store)
         }
@@ -25,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.appearance = NSAppearance(named: .darkAqua)
         // Set up the notification delegate so the "Resume tracking" button works.
         _ = NotificationManager.shared
+        // Begin the 20-min eye / 90-min movement break reminders (if enabled).
+        BreakScheduler.shared.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

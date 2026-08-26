@@ -12,6 +12,7 @@ enum TockTheme {
 /// The window that drops down from the menu bar icon.
 struct PanelView: View {
     @EnvironmentObject var store: TimerStore
+    @EnvironmentObject var breaks: BreakScheduler
 
     @State private var addingProject = false
     @State private var newProjectName = ""
@@ -283,6 +284,13 @@ struct PanelView: View {
                     Text("After 15 min").tag(15)
                 }
                 .disabled(!store.autoStopWhenIdle)
+                Divider()
+                Toggle("Break reminders", isOn: $breaks.enabled)
+                    .help("Look away every 20 min; move every 90 min")
+                if breaks.enabled {
+                    Button("Take eye break now") { breaks.triggerNow(.eye) }
+                    Button("Take movement break now") { breaks.triggerNow(.move) }
+                }
                 if let id = store.selectedProjectId,
                    let p = store.project(id) {
                     Divider()
