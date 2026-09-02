@@ -66,8 +66,11 @@ final class BreakScheduler: ObservableObject {
 
     private let eyeInterval: TimeInterval = 20 * 60
     private let moveInterval: TimeInterval = 90 * 60
+    private let warningLead: TimeInterval = 10
+    private let delayBy: TimeInterval = 5 * 60
     private var eyeTimer: Timer?
     private var moveTimer: Timer?
+    private let warning = CornerPanelController()
 
     private init() {
         // Default on the first time (the feature was explicitly requested).
@@ -94,14 +97,31 @@ final class BreakScheduler: ObservableObject {
         return timer
     }
 
+    /// A break is due: show the 10-second corner warning first, then the overlay.
     private func fire(_ kind: BreakKind) {
-        guard enabled, !BreakOverlayController.shared.isShowing else { return }
+        guard enabled, !BreakOverlayController.shared.isShowing, !warning.isShowing else { return }
         if kind == .move {
             // A movement break rests the eyes too — restart the 20-minute clock.
             eyeTimer?.invalidate()
             eyeTimer = repeatingTimer(eyeInterval) { [weak self] in self?.fire(.eye) }
         }
-        present(kind)
+
+        var finished = false
+        let elapse = { [weak self] in
+            guard !finished else { return }
+            finished = true
+            self?.warning.hide()
+            self?.present(kind)
+        }
+        let delayAction = { [weak self] in
+            guard !finished else { return }
+            finished = true
+            self?.warning.hide()
+            self?.delay(kind)
+        }
+
+        warning.show(width: 300, height: 84, topOffset: 18, onReturn: delayAction,
+                     view: PreBreakWarningView(kind: kind, onDelay: delayAction, onElapsed: elapse))
     }
 
     private func present(_ kind: BreakKind) {
@@ -109,22 +129,42 @@ final class BreakScheduler: ObservableObject {
         BreakOverlayController.shared.present(kind: kind, onSnooze: onSnooze)
     }
 
+    /// Postpone this break by `delayBy`, then resume the normal cadence.
+    private func delay(_ kind: BreakKind) {
+        switch kind {
+        case .eye:
+            eyeTimer?.invalidate()
+            eyeTimer = oneShot(after: delayBy, thenEvery: eyeInterval, kind: .eye)
+        case .move:
+            moveTimer?.invalidate()
+            moveTimer = oneShot(after: delayBy, thenEvery: moveInterval, kind: .move)
+        }
+    }
+
     private func snoozeMove() {
         moveTimer?.invalidate()
-        let timer = Timer(timeInterval: 5 * 60, repeats: false) { [weak self] _ in
-            self?.fire(.move)
-            // Resume the normal 90-minute cadence afterwards.
-            self?.moveTimer?.invalidate()
-            self?.moveTimer = self?.repeatingTimer(self?.moveInterval ?? 5400) { [weak self] in
-                self?.fire(.move)
+        moveTimer = oneShot(after: delayBy, thenEvery: moveInterval, kind: .move)
+    }
+
+    private func oneShot(after delay: TimeInterval, thenEvery interval: TimeInterval,
+                         kind: BreakKind) -> Timer {
+        let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.fire(kind)
+            switch kind {
+            case .eye:
+                self.eyeTimer = self.repeatingTimer(interval) { [weak self] in self?.fire(.eye) }
+            case .move:
+                self.moveTimer = self.repeatingTimer(interval) { [weak self] in self?.fire(.move) }
             }
         }
         RunLoop.main.add(timer, forMode: .common)
-        moveTimer = timer
+        return timer
     }
 
-    /// Show a break right now (used by the "Take a break now" menu items).
+    /// Show a break right now (used by the "Take a break now" menu items) — no warning.
     func triggerNow(_ kind: BreakKind) {
+        warning.hide()
         BreakOverlayController.shared.dismiss()
         present(kind)
     }
@@ -306,14 +346,45 @@ struct BreakOverlayView: View {
     }
 }
 
-/// Blurs whatever is behind the borderless window for a frosted look.
-private struct VisualEffectBackdrop: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = .fullScreenUI
-        view.blendingMode = .behindWindow
-        view.state = .active
-        return view
+/// The 10-second heads-up card shown in the corner before a break takes over.
+struct PreBreakWarningView: View {
+    let kind: BreakKind
+    let onDelay: () -> Void
+    let onElapsed: () -> Void
+    @State private var remaining = 10
+
+    private let tick = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(kind.tint.opacity(0.18)).frame(width: 42, height: 42)
+                Image(systemName: kind.systemImage)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(kind.tint)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(kind == .eye ? "Eye break in \(remaining)s" : "Movement break in \(remaining)s")
+                    .font(.subheadline.weight(.semibold))
+                Text("Press ⏎ to delay 5 min")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 4)
+            Button("Delay") { onDelay() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .keyboardShortcut(.defaultAction)
+        }
+        .padding(12)
+        .frame(width: 300)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(.white.opacity(0.08), lineWidth: 1)
+        )
+        .onReceive(tick) { _ in
+            if remaining > 1 { remaining -= 1 } else { onElapsed() }
+        }
     }
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }

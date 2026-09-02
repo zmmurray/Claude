@@ -11,6 +11,7 @@ struct TockApp: App {
             PanelView()
                 .environmentObject(store)
                 .environmentObject(BreakScheduler.shared)
+                .environmentObject(BatteryMonitor.shared)
         } label: {
             MenuBarLabel(store: store)
         }
@@ -28,6 +29,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = NotificationManager.shared
         // Begin the 20-min eye / 90-min movement break reminders (if enabled).
         BreakScheduler.shared.start()
+        // Begin watching battery for low/critical alerts (if enabled).
+        BatteryMonitor.shared.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

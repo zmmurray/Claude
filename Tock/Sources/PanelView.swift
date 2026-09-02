@@ -13,6 +13,7 @@ enum TockTheme {
 struct PanelView: View {
     @EnvironmentObject var store: TimerStore
     @EnvironmentObject var breaks: BreakScheduler
+    @EnvironmentObject var battery: BatteryMonitor
 
     @State private var addingProject = false
     @State private var newProjectName = ""
@@ -291,6 +292,10 @@ struct PanelView: View {
                     Button("Take eye break now") { breaks.triggerNow(.eye) }
                     Button("Take movement break now") { breaks.triggerNow(.move) }
                 }
+                Divider()
+                Text(battery.menuText)
+                Toggle("Battery alerts", isOn: $battery.enabled)
+                    .help("Warn when battery is low, and full-screen alert under ~60s")
                 if let id = store.selectedProjectId,
                    let p = store.project(id) {
                     Divider()

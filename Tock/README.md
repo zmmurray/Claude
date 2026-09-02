@@ -97,6 +97,18 @@ you to look ~20 feet away for 20 seconds; every 90 minutes it prompts a
 on demand to preview it — from the **⋯** menu. A movement break also restarts
 the 20-minute eye-break clock.
 
+Ten seconds before a break takes over, a small heads-up card appears in the
+top-right corner counting down; press **⏎** (or click **Delay**) to push that
+break back 5 minutes.
+
+### Battery alerts
+
+Optional battery alerts (⋯ menu) use the system's own time-to-empty estimate.
+When you're unplugged and low, a corner card shows an estimated "time left";
+under ~60 seconds it escalates to a full-screen "Plug in now" overlay. The
+current estimate is always shown in the ⋯ menu. Alerts clear the moment you
+plug in.
+
 If you quit while a timer is running, the session is finalized and saved
 automatically (it is never resumed on next launch, to avoid logging idle
 overnight time).
