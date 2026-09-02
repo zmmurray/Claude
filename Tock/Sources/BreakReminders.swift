@@ -374,7 +374,6 @@ struct PreBreakWarningView: View {
             Button("Delay") { onDelay() }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .keyboardShortcut(.defaultAction)
         }
         .padding(12)
         .frame(width: 300)

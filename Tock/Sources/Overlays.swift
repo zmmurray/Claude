@@ -1,5 +1,48 @@
 import SwiftUI
 import AppKit
+import Carbon.HIToolbox
+
+/// A temporary system-wide Return/Enter hotkey. Uses Carbon's RegisterEventHotKey,
+/// which needs no permission and works regardless of which app is focused. Active
+/// only while a break warning is on screen, so Enter is reserved just for that.
+final class ReturnHotKey {
+    private var refs: [EventHotKeyRef?] = []
+    private var handler: EventHandlerRef?
+    private var action: (() -> Void)?
+    private let signature: OSType = 0x544f434b   // 'TOCK'
+
+    func begin(_ action: @escaping () -> Void) {
+        end()
+        self.action = action
+
+        var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
+                                 eventKind: UInt32(kEventHotKeyPressed))
+        let selfPtr = Unmanaged.passUnretained(self).toOpaque()
+        InstallEventHandler(GetApplicationEventTarget(), { _, _, userData -> OSStatus in
+            guard let userData else { return noErr }
+            let me = Unmanaged<ReturnHotKey>.fromOpaque(userData).takeUnretainedValue()
+            DispatchQueue.main.async { me.action?() }
+            return noErr
+        }, 1, &spec, selfPtr, &handler)
+
+        register(keyCode: UInt32(kVK_Return), id: 1)
+        register(keyCode: UInt32(kVK_ANSI_KeypadEnter), id: 2)
+    }
+
+    private func register(keyCode: UInt32, id: UInt32) {
+        var ref: EventHotKeyRef?
+        let hotKeyID = EventHotKeyID(signature: signature, id: id)
+        RegisterEventHotKey(keyCode, 0, hotKeyID, GetApplicationEventTarget(), 0, &ref)
+        refs.append(ref)
+    }
+
+    func end() {
+        for ref in refs where ref != nil { UnregisterEventHotKey(ref!) }
+        refs.removeAll()
+        if let handler { RemoveEventHandler(handler); self.handler = nil }
+        action = nil
+    }
+}
 
 /// Blurs whatever is behind a borderless/clear window for a frosted look.
 struct VisualEffectBackdrop: NSViewRepresentable {
@@ -14,10 +57,11 @@ struct VisualEffectBackdrop: NSViewRepresentable {
 }
 
 /// Hosts a SwiftUI view in a small floating panel pinned to the top-right corner.
-/// If `onReturn` is provided the panel becomes key and Return triggers it.
+/// If `onReturn` is provided, a temporary global Return hotkey triggers it — no
+/// focus stealing, so the card never interrupts what you're typing.
 final class CornerPanelController {
     private var panel: NSPanel?
-    private var monitor: Any?
+    private let hotKey = ReturnHotKey()
 
     var isShowing: Bool { panel != nil }
 
@@ -43,20 +87,12 @@ final class CornerPanelController {
         panel.orderFrontRegardless()
 
         if let onReturn {
-            panel.makeKey()
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                if event.keyCode == 36 || event.keyCode == 76 {   // Return / keypad Enter
-                    onReturn()
-                    return nil
-                }
-                return event
-            }
+            hotKey.begin(onReturn)
         }
     }
 
     func hide() {
-        if let monitor { NSEvent.removeMonitor(monitor) }
-        monitor = nil
+        hotKey.end()
         panel?.orderOut(nil)
         panel = nil
     }
