@@ -104,10 +104,11 @@ break back 5 minutes.
 ### Battery alerts
 
 Optional battery alerts (⋯ menu) use the system's own time-to-empty estimate.
-When you're unplugged and low, a corner card shows an estimated "time left";
-under ~60 seconds it escalates to a full-screen "Plug in now" overlay. The
-current estimate is always shown in the ⋯ menu. Alerts clear the moment you
-plug in.
+When you're unplugged and low (~20 min left), a corner card pops in briefly with
+the estimate and auto-dismisses, then reappears at most every ~5 minutes as a
+gentle reminder. Under ~60 seconds it escalates to a full-screen "Plug in now"
+overlay that stays until you plug in. The current estimate is always shown in
+the ⋯ menu. Alerts clear the moment you plug in.
 
 If you quit while a timer is running, the session is finalized and saved
 automatically (it is never resumed on next launch, to avoid logging idle

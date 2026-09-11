@@ -24,9 +24,14 @@ final class BatteryMonitor: ObservableObject {
     }
     @Published private(set) var snapshot = BatterySnapshot()
 
-    private let lowSeconds = 20 * 60     // show corner card at/under 20 minutes
-    private let criticalSeconds = 60     // full-screen overlay at/under 60 seconds
+    private let lowSeconds = 20 * 60          // start quick reminders at/under 20 min
+    private let criticalSeconds = 60          // full-screen overlay at/under 60 seconds
+    private let toastSeconds: TimeInterval = 6      // how long the corner toast lingers
+    private let reminderInterval: TimeInterval = 5 * 60  // re-toast at most this often
     private var timer: Timer?
+    private var cornerHideTimer: Timer?
+    private var wasLow = false
+    private var lastToastAt: Date?
     private let corner = CornerPanelController()
     private let critical = FullScreenOverlayController()
 
@@ -43,11 +48,11 @@ final class BatteryMonitor: ObservableObject {
     private func reschedule() {
         timer?.invalidate(); timer = nil
         guard enabled else {
-            corner.hide(); critical.hide()
+            resetAlerts()
             return
         }
         poll()
-        let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in self?.poll() }
+        let timer = Timer(timeInterval: 10, repeats: true) { [weak self] _ in self?.poll() }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
@@ -57,32 +62,62 @@ final class BatteryMonitor: ObservableObject {
         snapshot = snap
         guard enabled else { return }
 
-        // Plugged in (or charging): clear everything.
+        // Plugged in (or charging): clear everything and reset reminder state.
         if snap.onAC || snap.charging {
-            corner.hide(); critical.hide()
+            resetAlerts()
             return
         }
 
         guard let seconds = snap.seconds else {
-            corner.hide(); critical.hide()
+            resetAlerts()
             return
         }
 
         if seconds <= criticalSeconds {
-            corner.hide()
+            // Final stretch: full-screen overlay that stays until plugged in.
+            hideCorner()
             if !critical.isShowing {
                 critical.show(view: BatteryCriticalView(onDismiss: { [weak self] in self?.critical.hide() })
                     .environmentObject(self))
             }
         } else if seconds <= lowSeconds {
+            // Low: a quick toast now, then again at most every `reminderInterval`.
             critical.hide()
-            if !corner.isShowing {
-                corner.show(width: 300, height: 76, topOffset: 112,
-                            view: BatteryCornerView().environmentObject(self))
+            let now = Date()
+            let due = !wasLow || lastToastAt == nil
+                || now.timeIntervalSince(lastToastAt ?? .distantPast) >= reminderInterval
+            if due {
+                showToast()
+                lastToastAt = now
             }
+            wasLow = true
         } else {
-            corner.hide(); critical.hide()
+            resetAlerts()
         }
+    }
+
+    /// Show the corner card briefly, then auto-dismiss it.
+    private func showToast() {
+        corner.show(width: 300, height: 76, topOffset: 112,
+                    view: BatteryCornerView().environmentObject(self))
+        cornerHideTimer?.invalidate()
+        let timer = Timer(timeInterval: toastSeconds, repeats: false) { [weak self] _ in
+            self?.hideCorner()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        cornerHideTimer = timer
+    }
+
+    private func hideCorner() {
+        cornerHideTimer?.invalidate(); cornerHideTimer = nil
+        corner.hide()
+    }
+
+    private func resetAlerts() {
+        hideCorner()
+        critical.hide()
+        wasLow = false
+        lastToastAt = nil
     }
 
     /// Human-readable current estimate for the menu.
