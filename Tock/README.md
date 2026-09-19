@@ -80,7 +80,9 @@ Click the menu bar icon → the **⋯** menu → toggle **Launch at login**. Thi
   column is for invoicing.
 
 From the **⋯** menu you can turn on **Auto-stop when idle** (after 5/10/15 min
-of no keyboard or mouse activity). When it triggers, the session's end is
+of no keyboard or mouse activity). Both break intervals are adjustable
+from the **⋯** menu — eye break 20/30/45/60 min (default 30), movement break
+60/90/120/180 min (default 90). When it triggers, the session's end is
 backdated to the moment activity stopped, so the idle stretch is never counted.
 Reading idle time needs no special permission.
 

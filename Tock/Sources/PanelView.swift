@@ -289,6 +289,18 @@ struct PanelView: View {
                 Toggle("Break reminders", isOn: $breaks.enabled)
                     .help("Look away every 20 min; move every 90 min")
                 if breaks.enabled {
+                    Picker("Eye break every", selection: $breaks.eyeMinutes) {
+                        Text("20 min").tag(20)
+                        Text("30 min").tag(30)
+                        Text("45 min").tag(45)
+                        Text("60 min").tag(60)
+                    }
+                    Picker("Movement break every", selection: $breaks.moveMinutes) {
+                        Text("60 min").tag(60)
+                        Text("90 min").tag(90)
+                        Text("120 min").tag(120)
+                        Text("180 min").tag(180)
+                    }
                     Button("Take eye break now") { breaks.triggerNow(.eye) }
                     Button("Take movement break now") { breaks.triggerNow(.move) }
                 }

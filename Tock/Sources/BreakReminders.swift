@@ -64,8 +64,24 @@ final class BreakScheduler: ObservableObject {
         }
     }
 
-    private let eyeInterval: TimeInterval = 20 * 60
-    private let moveInterval: TimeInterval = 90 * 60
+    /// How often the look-away (eye) break fires, in minutes. User-adjustable.
+    @Published var eyeMinutes: Int {
+        didSet {
+            UserDefaults.standard.set(eyeMinutes, forKey: "eyeBreakMinutes")
+            reschedule()
+        }
+    }
+
+    /// How often the movement (get-up) break fires, in minutes. User-adjustable.
+    @Published var moveMinutes: Int {
+        didSet {
+            UserDefaults.standard.set(moveMinutes, forKey: "moveBreakMinutes")
+            reschedule()
+        }
+    }
+
+    private var eyeInterval: TimeInterval { TimeInterval(eyeMinutes * 60) }
+    private var moveInterval: TimeInterval { TimeInterval(moveMinutes * 60) }
     private let warningLead: TimeInterval = 10
     private let delayBy: TimeInterval = 5 * 60
     private var eyeTimer: Timer?
@@ -79,6 +95,10 @@ final class BreakScheduler: ObservableObject {
         } else {
             enabled = UserDefaults.standard.bool(forKey: "breaksEnabled")
         }
+        let savedEye = UserDefaults.standard.integer(forKey: "eyeBreakMinutes")
+        eyeMinutes = savedEye > 0 ? savedEye : 30
+        let savedMove = UserDefaults.standard.integer(forKey: "moveBreakMinutes")
+        moveMinutes = savedMove > 0 ? savedMove : 90
     }
 
     func start() { reschedule() }
