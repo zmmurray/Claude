@@ -107,8 +107,9 @@ break back 5 minutes.
 
 Press **⌥⌘M** (or use the **⋯** menu) to toggle a screen magnifier — a rounded
 lens that follows the cursor and enlarges the area beneath it, for reading fine
-detail in small images/video without leaning in. Clicks pass straight through,
-so you can keep working underneath it. Zoom level (2×–4×) is set in the ⋯ menu.
+detail in small images/video without leaning in. It updates live as you move.
+Clicks pass straight through, so you can keep working underneath it. Zoom
+(2×–4×) and lens size (Medium–Huge) are set in the ⋯ menu.
 The first time, macOS asks for Screen Recording permission (needed to read the
 pixels under the lens); nothing is recorded or sent anywhere.
 

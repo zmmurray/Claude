@@ -319,6 +319,12 @@ struct PanelView: View {
                     Text("3×").tag(3.0)
                     Text("4×").tag(4.0)
                 }
+                Picker("Magnifier size", selection: $magnifier.lensWidth) {
+                    Text("Medium").tag(560)
+                    Text("Large").tag(720)
+                    Text("X-Large").tag(920)
+                    Text("Huge").tag(1120)
+                }
                 if let id = store.selectedProjectId,
                    let p = store.project(id) {
                     Divider()

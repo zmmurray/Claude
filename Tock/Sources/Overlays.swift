@@ -18,10 +18,17 @@ final class ReturnHotKey {
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                  eventKind: UInt32(kEventHotKeyPressed))
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, userData -> OSStatus in
-            guard let userData else { return noErr }
-            let me = Unmanaged<ReturnHotKey>.fromOpaque(userData).takeUnretainedValue()
-            DispatchQueue.main.async { me.action?() }
+        InstallEventHandler(GetApplicationEventTarget(), { _, event, userData -> OSStatus in
+            guard let userData, let event else { return noErr }
+            var hkID = EventHotKeyID()
+            let status = GetEventParameter(event, EventParamName(kEventParamDirectObject),
+                                           EventParamType(typeEventHotKeyID), nil,
+                                           MemoryLayout<EventHotKeyID>.size, nil, &hkID)
+            // Only react to our own Return/Enter hotkeys ('TOCK').
+            if status == noErr && hkID.signature == 0x544f434b {
+                let me = Unmanaged<ReturnHotKey>.fromOpaque(userData).takeUnretainedValue()
+                DispatchQueue.main.async { me.action?() }
+            }
             return noErr
         }, 1, &spec, selfPtr, &handler)
 
