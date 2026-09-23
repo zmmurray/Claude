@@ -12,6 +12,7 @@ struct TockApp: App {
                 .environmentObject(store)
                 .environmentObject(BreakScheduler.shared)
                 .environmentObject(BatteryMonitor.shared)
+                .environmentObject(Magnifier.shared)
         } label: {
             MenuBarLabel(store: store)
         }
@@ -31,6 +32,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         BreakScheduler.shared.start()
         // Begin watching battery for low/critical alerts (if enabled).
         BatteryMonitor.shared.start()
+        // Register the ⌥⌘M magnifier toggle hotkey.
+        Magnifier.shared.installHotKey()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

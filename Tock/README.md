@@ -103,6 +103,15 @@ Ten seconds before a break takes over, a small heads-up card appears in the
 top-right corner counting down; press **⏎** (or click **Delay**) to push that
 break back 5 minutes.
 
+### Magnifier
+
+Press **⌥⌘M** (or use the **⋯** menu) to toggle a screen magnifier — a rounded
+lens that follows the cursor and enlarges the area beneath it, for reading fine
+detail in small images/video without leaning in. Clicks pass straight through,
+so you can keep working underneath it. Zoom level (2×–4×) is set in the ⋯ menu.
+The first time, macOS asks for Screen Recording permission (needed to read the
+pixels under the lens); nothing is recorded or sent anywhere.
+
 ### Battery alerts
 
 Optional battery alerts (⋯ menu) use the system's own time-to-empty estimate.

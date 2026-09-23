@@ -14,6 +14,7 @@ struct PanelView: View {
     @EnvironmentObject var store: TimerStore
     @EnvironmentObject var breaks: BreakScheduler
     @EnvironmentObject var battery: BatteryMonitor
+    @EnvironmentObject var magnifier: Magnifier
 
     @State private var addingProject = false
     @State private var newProjectName = ""
@@ -308,6 +309,16 @@ struct PanelView: View {
                 Text(battery.menuText)
                 Toggle("Battery alerts", isOn: $battery.enabled)
                     .help("Warn when battery is low, and full-screen alert under ~60s")
+                Divider()
+                Button(magnifier.isActive ? "Hide Magnifier  (⌥⌘M)" : "Magnifier  (⌥⌘M)") {
+                    magnifier.toggle()
+                }
+                Picker("Magnifier zoom", selection: $magnifier.zoom) {
+                    Text("2×").tag(2.0)
+                    Text("2.5×").tag(2.5)
+                    Text("3×").tag(3.0)
+                    Text("4×").tag(4.0)
+                }
                 if let id = store.selectedProjectId,
                    let p = store.project(id) {
                     Divider()
