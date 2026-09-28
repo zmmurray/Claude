@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import CoreGraphics
 
 /// The two kinds of break the reminder shows.
 enum BreakKind: Equatable {
@@ -82,10 +83,14 @@ final class BreakScheduler: ObservableObject {
 
     private var eyeInterval: TimeInterval { TimeInterval(eyeMinutes * 60) }
     private var moveInterval: TimeInterval { TimeInterval(moveMinutes * 60) }
-    private let warningLead: TimeInterval = 10
     private let delayBy: TimeInterval = 5 * 60
-    private var eyeTimer: Timer?
-    private var moveTimer: Timer?
+    /// Idle this long (seconds) and the break clocks reset — you're away.
+    private let idleResetSeconds: TimeInterval = 180
+
+    // Accumulated *active-usage* seconds since each break last reset.
+    private var eyeActive: TimeInterval = 0
+    private var moveActive: TimeInterval = 0
+    private var usageTimer: Timer?
     private let warning = CornerPanelController()
 
     private init() {
@@ -104,27 +109,53 @@ final class BreakScheduler: ObservableObject {
     func start() { reschedule() }
 
     private func reschedule() {
-        eyeTimer?.invalidate(); eyeTimer = nil
-        moveTimer?.invalidate(); moveTimer = nil
+        usageTimer?.invalidate(); usageTimer = nil
+        eyeActive = 0
+        moveActive = 0
         guard enabled else { return }
-        eyeTimer = repeatingTimer(eyeInterval) { [weak self] in self?.fire(.eye) }
-        moveTimer = repeatingTimer(moveInterval) { [weak self] in self?.fire(.move) }
+        let timer = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.usageTick()
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        usageTimer = timer
     }
 
-    private func repeatingTimer(_ interval: TimeInterval, _ action: @escaping () -> Void) -> Timer {
-        let timer = Timer(timeInterval: interval, repeats: true) { _ in action() }
-        RunLoop.main.add(timer, forMode: .common)
-        return timer
+    /// Runs every second: advances the break clocks only while the Mac is in
+    /// active use, and resets them after a stretch of inactivity.
+    private func usageTick() {
+        guard enabled else { return }
+        // Don't advance while a warning or break is already on screen.
+        if warning.isShowing || BreakOverlayController.shared.isShowing { return }
+
+        if Self.systemIdleSeconds() >= idleResetSeconds {
+            // Away for a while — restart both clocks for a fresh interval on return.
+            eyeActive = 0
+            moveActive = 0
+            return
+        }
+
+        eyeActive += 1
+        moveActive += 1
+
+        if moveActive >= moveInterval {
+            moveActive = 0
+            eyeActive = 0          // a movement break rests the eyes too
+            fire(.move)
+        } else if eyeActive >= eyeInterval {
+            eyeActive = 0
+            fire(.eye)
+        }
+    }
+
+    /// Seconds since the last user input, system-wide (no permission needed).
+    private static func systemIdleSeconds() -> TimeInterval {
+        let anyInput = CGEventType(rawValue: ~0) ?? .null
+        return CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: anyInput)
     }
 
     /// A break is due: show the 10-second corner warning first, then the overlay.
     private func fire(_ kind: BreakKind) {
         guard enabled, !BreakOverlayController.shared.isShowing, !warning.isShowing else { return }
-        if kind == .move {
-            // A movement break rests the eyes too — restart the 20-minute clock.
-            eyeTimer?.invalidate()
-            eyeTimer = repeatingTimer(eyeInterval) { [weak self] in self?.fire(.eye) }
-        }
 
         var finished = false
         let elapse = { [weak self] in
@@ -149,43 +180,26 @@ final class BreakScheduler: ObservableObject {
         BreakOverlayController.shared.present(kind: kind, onSnooze: onSnooze)
     }
 
-    /// Postpone this break by `delayBy`, then resume the normal cadence.
+    /// Postpone this break by `delayBy` of further active usage.
     private func delay(_ kind: BreakKind) {
         switch kind {
-        case .eye:
-            eyeTimer?.invalidate()
-            eyeTimer = oneShot(after: delayBy, thenEvery: eyeInterval, kind: .eye)
-        case .move:
-            moveTimer?.invalidate()
-            moveTimer = oneShot(after: delayBy, thenEvery: moveInterval, kind: .move)
+        case .eye:  eyeActive = max(0, eyeInterval - delayBy)
+        case .move: moveActive = max(0, moveInterval - delayBy)
         }
     }
 
     private func snoozeMove() {
-        moveTimer?.invalidate()
-        moveTimer = oneShot(after: delayBy, thenEvery: moveInterval, kind: .move)
-    }
-
-    private func oneShot(after delay: TimeInterval, thenEvery interval: TimeInterval,
-                         kind: BreakKind) -> Timer {
-        let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
-            guard let self else { return }
-            self.fire(kind)
-            switch kind {
-            case .eye:
-                self.eyeTimer = self.repeatingTimer(interval) { [weak self] in self?.fire(.eye) }
-            case .move:
-                self.moveTimer = self.repeatingTimer(interval) { [weak self] in self?.fire(.move) }
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        return timer
+        moveActive = max(0, moveInterval - delayBy)
     }
 
     /// Show a break right now (used by the "Take a break now" menu items) — no warning.
     func triggerNow(_ kind: BreakKind) {
         warning.hide()
         BreakOverlayController.shared.dismiss()
+        switch kind {
+        case .eye:  eyeActive = 0
+        case .move: moveActive = 0; eyeActive = 0
+        }
         present(kind)
     }
 }
