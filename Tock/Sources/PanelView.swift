@@ -296,6 +296,7 @@ struct PanelView: View {
                         Text("30 min").tag(30)
                         Text("45 min").tag(45)
                         Text("60 min").tag(60)
+                        Text("90 min").tag(90)
                     }
                     .pickerStyle(.inline)
                     Picker("Movement break every", selection: $breaks.moveMinutes) {
@@ -303,6 +304,7 @@ struct PanelView: View {
                         Text("90 min").tag(90)
                         Text("120 min").tag(120)
                         Text("180 min").tag(180)
+                        Text("240 min").tag(240)
                     }
                     .pickerStyle(.inline)
                     Button("Take eye break now") { breaks.triggerNow(.eye) }

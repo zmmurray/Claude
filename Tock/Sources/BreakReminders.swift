@@ -83,7 +83,6 @@ final class BreakScheduler: ObservableObject {
 
     private var eyeInterval: TimeInterval { TimeInterval(eyeMinutes * 60) }
     private var moveInterval: TimeInterval { TimeInterval(moveMinutes * 60) }
-    private let delayBy: TimeInterval = 5 * 60
     /// Idle this long (seconds) and the break clocks reset — you're away.
     private let idleResetSeconds: TimeInterval = 180
 
@@ -168,7 +167,7 @@ final class BreakScheduler: ObservableObject {
             guard !finished else { return }
             finished = true
             self?.warning.hide()
-            self?.delay(kind)
+            self?.skip(kind)
         }
 
         warning.show(width: 300, height: 84, topOffset: 18, onReturn: delayAction,
@@ -180,16 +179,18 @@ final class BreakScheduler: ObservableObject {
         BreakOverlayController.shared.present(kind: kind, onSnooze: onSnooze)
     }
 
-    /// Postpone this break by `delayBy` of further active usage.
-    private func delay(_ kind: BreakKind) {
+    /// Dismissing a warning skips this break entirely — next one is a full
+    /// interval of active usage away, so it doesn't nag back in a few minutes.
+    private func skip(_ kind: BreakKind) {
         switch kind {
-        case .eye:  eyeActive = max(0, eyeInterval - delayBy)
-        case .move: moveActive = max(0, moveInterval - delayBy)
+        case .eye:  eyeActive = 0
+        case .move: moveActive = 0; eyeActive = 0
         }
     }
 
+    /// Movement overlay "Snooze": bring it back after 15 min of active usage.
     private func snoozeMove() {
-        moveActive = max(0, moveInterval - delayBy)
+        moveActive = max(0, moveInterval - 15 * 60)
     }
 
     /// Show a break right now (used by the "Take a break now" menu items) — no warning.
@@ -316,7 +317,7 @@ struct BreakOverlayView: View {
                         .buttonStyle(.bordered)
                         .controlSize(.large)
                     if kind == .move {
-                        Button("Snooze 5 min") {
+                        Button("Snooze 15 min") {
                             onSnooze?()
                             close()
                         }
@@ -400,12 +401,12 @@ struct PreBreakWarningView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(kind == .eye ? "Eye break in \(remaining)s" : "Movement break in \(remaining)s")
                     .font(.subheadline.weight(.semibold))
-                Text("Press ⏎ to delay 5 min")
+                Text("Press ⏎ to skip this one")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 4)
-            Button("Delay") { onDelay() }
+            Button("Skip") { onDelay() }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
         }
