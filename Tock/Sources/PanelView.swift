@@ -15,6 +15,7 @@ struct PanelView: View {
     @EnvironmentObject var breaks: BreakScheduler
     @EnvironmentObject var battery: BatteryMonitor
     @EnvironmentObject var magnifier: Magnifier
+    @EnvironmentObject var stopwatch: Stopwatch
 
     @State private var addingProject = false
     @State private var newProjectName = ""
@@ -32,6 +33,8 @@ struct PanelView: View {
             .padding(14)
             .frame(maxWidth: .infinity)
             .background(TockTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            stopwatchCard
 
             listSection
                 .padding(12)
@@ -134,6 +137,44 @@ struct PanelView: View {
             .disabled(!store.isRunning && store.selectedProjectId == nil)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: Stopwatch
+
+    private var stopwatchCard: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Stopwatch · ⌥⌘S")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(Format.liveClock(stopwatch.elapsed))
+                    .font(.system(size: 26, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+            }
+            Spacer()
+            Button {
+                stopwatch.reset()
+            } label: {
+                Image(systemName: "arrow.counterclockwise")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .disabled(stopwatch.elapsed == 0 && !stopwatch.running)
+            .help("Reset stopwatch")
+            Button {
+                stopwatch.toggle()
+            } label: {
+                Text(stopwatch.running ? "Stop" : "Start")
+                    .frame(width: 60)
+                    .font(.headline)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .tint(stopwatch.running ? .red : .accentColor)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(TockTheme.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     // MARK: Stats

@@ -106,6 +106,12 @@ Ten seconds before a break takes over, a small heads-up card appears in the
 top-right corner counting down; press **⏎** (or click **Delay**) to push that
 break back 5 minutes.
 
+### Stopwatch
+
+A simple count-up stopwatch, separate from project tracking — no project to
+pick. Start/stop/reset it from the panel, or toggle it from anywhere with
+**⌥⌘S**. While it's the only thing running it also ticks in the menu bar.
+
 ### Magnifier
 
 Press **⌥⌘M** (or use the **⋯** menu) to toggle a screen magnifier — a rounded
